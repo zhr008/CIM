@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HsmsConfig>
+  <Devices>
+    <!--
+      Host设备测试 - CIMMonitor作为客户端
+      CIMMonitor连接到HsmsSimulator服务端
+    -->
+    <Device Type="HSMS" Id="HOST_DEVICE_001" Name="Host设备测试 (客户端模式)" Enabled="true">
+      <Connection>
+        <!-- 使用localhost连接到本地HsmsSimulator -->
+        <Host>127.0.0.1</Host>
+        <Port>5000</Port>
+      </Connection>
+      <SecsSettings>
+        <DeviceIdValue>1</DeviceIdValue>
+        <SessionIdValue>0x1234</SessionIdValue>
+        <Timeout>5000</Timeout>
+        <Role>Client</Role>
+      </SecsSettings>
+      <Description>
+        此设备类型为host，CIMMonitor将作为客户端主动连接到HsmsSimulator服务端
+      </Description>
+    </Device>
+
+    <!--
+      EQP设备测试 - CIMMonitor作为服务端
+      CIMMonitor启动监听端口，等待HsmsSimulator客户端连接
+    -->
+    <Device Type="HSMS" Id="EQP_DEVICE_001" Name="EQP设备测试 (服务端模式)" Enabled="true">
+      <Connection>
+        <!-- 使用非IP地址表示EQP类型 -->
+        <Host>EQP_MACHINE_01</Host>
+        <Port>5001</Port>
+      </Connection>
+      <SecsSettings>
+        <DeviceIdValue>2</DeviceIdValue>
+        <SessionIdValue>0x5678</SessionIdValue>
+        <Timeout>5000</Timeout>
+        <Role>Server</Role>
+      </SecsSettings>
+      <Description>
+        此设备类型为EQP，CIMMonitor将作为服务端监听端口5001，等待HsmsSimulator客户端连接
+      </Description>
+    </Device>
+
+    <!--
+      EQP设备测试2 - 多个EQP设备
+      CIMMonitor可以同时作为多个服务端监听不同端口
+    -->
+    <Device Type="HSMS" Id="EQP_DEVICE_002" Name="EQP设备测试2 (服务端模式)" Enabled="false">
+      <Connection>
+        <Host>EQP_MACHINE_02</Host>
+        <Port>5002</Port>
+      </Connection>
+      <SecsSettings>
+        <DeviceIdValue>3</DeviceIdValue>
+        <SessionIdValue>0xABCD</SessionIdValue>
+        <Timeout>5000</Timeout>
+        <Role>Server</Role>
+      </SecsSettings>
+      <Description>
+        第二个EQP设备，监听端口5002
+      </Description>
+    </Device>
+  </Devices>
+</HsmsConfig>
