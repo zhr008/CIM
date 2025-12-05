@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HsmsSimulator\HsmsSimulator.csproj" />
-    <ProjectReference Include="..\..\CIMSystem\Common\Common.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

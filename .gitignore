@@ -1,19 +1,14 @@
 ```
-# Build results
-[C-Build]/
-_Build/
-bld/
-[Bb]in/
-[Oo]bj/
+# Build artifacts
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.userprefs
 
-# Visual Studio Code
-.vscode/
-
-# Visual Studio
-*.user
-*.userosscache
-*.suo
-*.csproj.user
+# Dependencies
+packages/
 
 # Logs
 *.log
@@ -23,65 +18,19 @@ bld/
 .env.local
 *.env.*
 
+# Editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Packages
-*.nupkg
-*.snupkg
-packages/
-
-# Output directory
-bin/
-obj/
-
-# Debug files
-*.ilk
-*.pdb
-
-# Temporary files
-*.tmp
-*~
-*.swp
-
-# Coverage
-coverage/
-htmlcov/
-
-# MyPy cache
-.mypy_cache/
-
-# PyTest cache
-.pytest_cache/
-
-# Gradle
-.gradle/
-
-# Target directory (for various build systems)
-target/
-
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+ehthumbs.db
+Icon?
 ```
+packages-microsoft-prod.deb

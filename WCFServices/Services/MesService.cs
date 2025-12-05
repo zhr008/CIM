@@ -1,298 +1,283 @@
-using CoreWCF;
-using Microsoft.Extensions.Logging;
-using WCFServices.Models;
-using WCFServices.DataAccess;
+using System;
+using System.Collections.Generic;
+using System.ServiceModel;
+using WCFServices.Contracts;
+using Common.Models;
+using log4net;
 
 namespace WCFServices.Services
 {
-    /// <summary>
-    /// MES系统WCF服务实现
-    /// </summary>
-    [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)]
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
     public class MesService : IMesService
     {
-        private readonly IMesBusinessService _businessService;
-        private readonly IOracleDataAccess _dataAccess;
-        private readonly ITibcoMessageSender _messageSender;
-        private readonly ILogger<MesService> _logger;
-
-        public MesService(
-            IMesBusinessService businessService,
-            IOracleDataAccess dataAccess,
-            ITibcoMessageSender messageSender,
-            ILogger<MesService> logger)
+        private static readonly ILog log = LogManager.GetLogger(typeof(MesService));
+        
+        // In-memory storage for demonstration - in real implementation, this would be a database
+        private static Dictionary<string, EquipmentStatus> equipmentStatuses = new Dictionary<string, EquipmentStatus>();
+        private static Dictionary<string, ProductionData> productionData = new Dictionary<string, ProductionData>();
+        private static Dictionary<string, List<AlarmInfo>> alarms = new Dictionary<string, List<AlarmInfo>>();
+        
+        static MesService()
         {
-            _businessService = businessService;
-            _dataAccess = dataAccess;
-            _messageSender = messageSender;
-            _logger = logger;
-        }
-
-        /// <summary>
-        /// 接收TIBCO消息并处理
-        /// </summary>
-        public async Task<MesResponse> ProcessMessageAsync(MesMessage message)
-        {
-            try
+            // Initialize some sample data
+            equipmentStatuses["EQP1"] = new EquipmentStatus
             {
-                _logger.LogInformation($"WCF收到消息: {message.MessageType}, Subject: {message.Subject}");
-
-                // 转换为内部消息模型
-                var tibcoMessage = new TibcoMessage
+                EquipmentID = "EQP1",
+                Status = "Running",
+                DataPoints = new Dictionary<string, object>
                 {
-                    MessageId = message.MessageId,
-                    Subject = message.Subject,
-                    MessageType = message.MessageType,
-                    Timestamp = message.Timestamp,
-                    Fields = message.Fields,
-                    CorrelationId = message.CorrelationId,
-                    ReplySubject = message.ReplySubject
-                };
-
-                // 调用业务服务处理
-                var success = await _businessService.ProcessMessageAsync(tibcoMessage);
-
-                return new MesResponse
+                    { "Temperature", 25.5 },
+                    { "Pressure", 1.2 },
+                    { "FlowRate", 100.0 }
+                }
+            };
+            
+            equipmentStatuses["EQP2"] = new EquipmentStatus
+            {
+                EquipmentID = "EQP2",
+                Status = "Idle",
+                DataPoints = new Dictionary<string, object>
                 {
-                    Success = success,
-                    Message = success ? "消息处理成功" : "消息处理失败",
-                    Data = message,
-                    MessageId = message.MessageId,
-                    Timestamp = DateTime.Now
+                    { "Temperature", 22.0 },
+                    { "Status", "Ready" }
+                }
+            };
+        }
+        
+        public EquipmentStatus GetEquipmentStatus(string equipmentId)
+        {
+            log.Info($"GetEquipmentStatus called for {equipmentId}");
+            
+            if (equipmentStatuses.ContainsKey(equipmentId))
+            {
+                var status = equipmentStatuses[equipmentId];
+                status.LastUpdate = DateTime.Now;
+                return status;
+            }
+            
+            log.Warn($"Equipment {equipmentId} not found");
+            return new EquipmentStatus
+            {
+                EquipmentID = equipmentId,
+                Status = "Unknown"
+            };
+        }
+        
+        public bool SetEquipmentStatus(string equipmentId, string status)
+        {
+            log.Info($"SetEquipmentStatus called for {equipmentId} with status {status}");
+            
+            if (equipmentStatuses.ContainsKey(equipmentId))
+            {
+                equipmentStatuses[equipmentId].Status = status;
+                equipmentStatuses[equipmentId].LastUpdate = DateTime.Now;
+            }
+            else
+            {
+                equipmentStatuses[equipmentId] = new EquipmentStatus
+                {
+                    EquipmentID = equipmentId,
+                    Status = status,
+                    LastUpdate = DateTime.Now
                 };
             }
-            catch (Exception ex)
+            
+            return true;
+        }
+        
+        public ProductionData GetProductionData(string batchId)
+        {
+            log.Info($"GetProductionData called for batch {batchId}");
+            
+            if (productionData.ContainsKey(batchId))
             {
-                _logger.LogError(ex, "处理消息失败");
-                return new MesResponse
+                return productionData[batchId];
+            }
+            
+            log.Warn($"Production data for batch {batchId} not found");
+            return new ProductionData
+            {
+                BatchID = batchId
+            };
+        }
+        
+        public bool UpdateProductionData(ProductionData productionDataParam)
+        {
+            log.Info($"UpdateProductionData called for batch {productionDataParam.BatchID}");
+            
+            productionData[productionDataParam.BatchID] = productionDataParam;
+            return true;
+        }
+        
+        public string ProcessEquipmentMessage(EquipmentMessage message)
+        {
+            log.Info($"ProcessEquipmentMessage called for {message.EquipmentID}: {message.MessageContent}");
+            
+            // Process the equipment message based on its type
+            switch (message.MessageType)
+            {
+                case "HSMS":
+                    // Handle HSMS message
+                    ProcessHsmsMessage(message);
+                    break;
+                case "OPC_DATA":
+                    // Handle OPC data message
+                    ProcessOpcDataMessage(message);
+                    break;
+                case "ALARM":
+                    // Handle alarm message
+                    ProcessAlarmMessage(message);
+                    break;
+                default:
+                    log.Info($"Unknown message type: {message.MessageType}");
+                    break;
+            }
+            
+            return "Message processed successfully";
+        }
+        
+        private void ProcessHsmsMessage(EquipmentMessage message)
+        {
+            log.Info($"Processing HSMS message from {message.EquipmentID}");
+            
+            // Update equipment status based on HSMS message
+            if (!equipmentStatuses.ContainsKey(message.EquipmentID))
+            {
+                equipmentStatuses[message.EquipmentID] = new EquipmentStatus
                 {
-                    Success = false,
-                    Message = $"处理失败: {ex.Message}",
-                    MessageId = message.MessageId,
-                    Timestamp = DateTime.Now
+                    EquipmentID = message.EquipmentID,
+                    Status = "Connected"
                 };
             }
-        }
-
-        /// <summary>
-        /// 获取设备状态
-        /// </summary>
-        public async Task<EquipmentInfo> GetEquipmentStatusAsync(string equipmentId)
-        {
-            try
+            
+            equipmentStatuses[message.EquipmentID].LastUpdate = DateTime.Now;
+            
+            // Parse message content and update data points
+            if (message.Properties.ContainsKey("Data"))
             {
-                _logger.LogInformation($"获取设备状态: {equipmentId}");
-
-                var equipment = await _dataAccess.GetEquipmentByIdAsync(equipmentId);
-
-                if (equipment != null)
+                foreach (var kvp in (Dictionary<string, object>)message.Properties["Data"])
                 {
-                    return new EquipmentInfo
+                    equipmentStatuses[message.EquipmentID].DataPoints[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+        
+        private void ProcessOpcDataMessage(EquipmentMessage message)
+        {
+            log.Info($"Processing OPC data message from {message.EquipmentID}");
+            
+            // Extract tag name and value from message
+            if (message.Properties.ContainsKey("TagName") && message.Properties.ContainsKey("Value"))
+            {
+                var tagName = message.Properties["TagName"].ToString();
+                var value = message.Properties["Value"];
+                
+                if (!equipmentStatuses.ContainsKey(message.EquipmentID))
+                {
+                    equipmentStatuses[message.EquipmentID] = new EquipmentStatus
                     {
-                        EquipmentId = equipment.EquipmentId,
-                        EquipmentName = equipment.EquipmentName,
-                        EquipmentType = equipment.EquipmentType,
-                        Status = equipment.Status,
-                        CurrentLotId = equipment.CurrentLotId,
-                        LastUpdateTime = equipment.LastUpdateTime
+                        EquipmentID = message.EquipmentID,
+                        Status = "Connected"
                     };
                 }
-
-                return new EquipmentInfo { EquipmentId = equipmentId };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"获取设备状态失败: {equipmentId}");
-                throw;
+                
+                equipmentStatuses[message.EquipmentID].DataPoints[tagName] = value;
+                equipmentStatuses[message.EquipmentID].LastUpdate = DateTime.Now;
             }
         }
-
-        /// <summary>
-        /// 获取批次信息
-        /// </summary>
-        public async Task<LotInfo> GetLotInfoAsync(string lotId)
+        
+        private void ProcessAlarmMessage(EquipmentMessage message)
         {
-            try
+            log.Info($"Processing alarm message from {message.EquipmentID}");
+            
+            // Create alarm based on message
+            var alarm = new AlarmInfo
             {
-                _logger.LogInformation($"获取批次信息: {lotId}");
-
-                var lot = await _dataAccess.GetLotByIdAsync(lotId);
-
-                if (lot != null)
+                AlarmID = Guid.NewGuid().ToString(),
+                EquipmentID = message.EquipmentID,
+                AlarmCode = "ALM001",
+                Description = message.MessageContent,
+                Timestamp = DateTime.Now,
+                Acknowledged = false
+            };
+            
+            if (!alarms.ContainsKey(message.EquipmentID))
+            {
+                alarms[message.EquipmentID] = new List<AlarmInfo>();
+            }
+            
+            alarms[message.EquipmentID].Add(alarm);
+        }
+        
+        public bool SendAlarm(string equipmentId, string alarmCode, string description)
+        {
+            log.Info($"SendAlarm called for {equipmentId}, code: {alarmCode}, description: {description}");
+            
+            var alarm = new AlarmInfo
+            {
+                AlarmID = Guid.NewGuid().ToString(),
+                EquipmentID = equipmentId,
+                AlarmCode = alarmCode,
+                Description = description,
+                Timestamp = DateTime.Now,
+                Acknowledged = false
+            };
+            
+            if (!alarms.ContainsKey(equipmentId))
+            {
+                alarms[equipmentId] = new List<AlarmInfo>();
+            }
+            
+            alarms[equipmentId].Add(alarm);
+            
+            return true;
+        }
+        
+        public string[] GetActiveAlarms(string equipmentId)
+        {
+            log.Info($"GetActiveAlarms called for {equipmentId}");
+            
+            if (alarms.ContainsKey(equipmentId))
+            {
+                var activeAlarms = alarms[equipmentId].FindAll(a => !a.Acknowledged);
+                var alarmIds = new string[activeAlarms.Count];
+                
+                for (int i = 0; i < activeAlarms.Count; i++)
                 {
-                    return new LotInfo
-                    {
-                        LotId = lot.LotId,
-                        ProductId = lot.ProductId,
-                        ProductName = lot.ProductName,
-                        WaferCount = lot.WaferCount,
-                        Status = lot.Status,
-                        CurrentEquipment = lot.CurrentEquipment,
-                        CreatedTime = lot.CreatedTime
-                    };
+                    alarmIds[i] = activeAlarms[i].AlarmID;
                 }
-
-                return new LotInfo { LotId = lotId };
+                
+                return alarmIds;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"获取批次信息失败: {lotId}");
-                throw;
-            }
+            
+            return new string[0];
         }
-
-        /// <summary>
-        /// 更新设备状态
-        /// </summary>
-        public async Task<UpdateResult> UpdateEquipmentStatusAsync(string equipmentId, string status, string lotId)
+        
+        public bool AcknowledgeAlarm(string alarmId)
         {
-            try
+            log.Info($"AcknowledgeAlarm called for alarm {alarmId}");
+            
+            foreach (var equipmentAlarms in alarms.Values)
             {
-                _logger.LogInformation($"更新设备状态: {equipmentId}, Status: {status}, Lot: {lotId}");
-
-                var success = await _dataAccess.UpdateEquipmentStatusAsync(equipmentId, status, lotId);
-
-                return new UpdateResult
+                var alarm = equipmentAlarms.Find(a => a.AlarmID == alarmId);
+                if (alarm != null)
                 {
-                    Success = success,
-                    Message = success ? "更新成功" : "更新失败",
-                    UpdatedEntity = $"Equipment: {equipmentId}"
-                };
+                    alarm.Acknowledged = true;
+                    return true;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"更新设备状态失败: {equipmentId}");
-                return new UpdateResult
-                {
-                    Success = false,
-                    Message = ex.Message,
-                    UpdatedEntity = $"Equipment: {equipmentId}"
-                };
-            }
+            
+            return false;
         }
-
-        /// <summary>
-        /// 获取报警列表
-        /// </summary>
-        public async Task<List<AlarmInfo>> GetAlarmsAsync(string equipmentId, DateTime startTime, DateTime endTime)
-        {
-            try
-            {
-                _logger.LogInformation($"获取报警: Equipment={equipmentId}, From={startTime}, To={endTime}");
-
-                var alarms = await _dataAccess.GetAlarmsByEquipmentAsync(equipmentId, startTime, endTime);
-
-                return alarms.Select(a => new AlarmInfo
-                {
-                    AlarmId = a.AlarmId,
-                    EquipmentId = a.EquipmentId,
-                    LotId = a.LotId,
-                    AlarmCode = a.AlarmCode,
-                    AlarmMessage = a.AlarmMessage,
-                    Severity = a.Severity,
-                    OccurTime = a.OccurTime,
-                    Status = a.Status
-                }).ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"获取报警列表失败: {equipmentId}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// 获取批次追踪信息
-        /// </summary>
-        public async Task<List<LotTrackingInfo>> GetLotTrackingAsync(string lotId)
-        {
-            try
-            {
-                _logger.LogInformation($"获取批次追踪: {lotId}");
-
-                var tracking = await _dataAccess.GetLotTrackingAsync(lotId);
-
-                return tracking.Select(t => new LotTrackingInfo
-                {
-                    LotId = t.LotId,
-                    EquipmentId = t.EquipmentId,
-                    ProcessStepId = t.ProcessStepId,
-                    InTime = t.InTime,
-                    OutTime = t.OutTime,
-                    Status = t.Status
-                }).ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"获取批次追踪失败: {lotId}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// 获取质量数据
-        /// </summary>
-        public async Task<QualityDataInfo> GetQualityDataAsync(string lotId)
-        {
-            try
-            {
-                _logger.LogInformation($"获取质量数据: {lotId}");
-
-                var yieldReport = await _dataAccess.GetYieldReportAsync(lotId);
-
-                return new QualityDataInfo
-                {
-                    LotId = lotId,
-                    Yield = yieldReport.ContainsKey("YIELD") ? yieldReport["YIELD"] : 0,
-                    TestResults = yieldReport,
-                    TestTime = DateTime.Now,
-                    Result = "OK"
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"获取质量数据失败: {lotId}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// 发送响应消息
-        /// </summary>
-        public async Task<SendResult> SendResponseMessageAsync(ResponseMessage response)
-        {
-            try
-            {
-                _logger.LogInformation($"发送响应消息: Subject={response.Subject}, Type={response.MessageType}");
-
-                var tibcoMessage = new TibcoMessage
-                {
-                    Subject = response.Subject,
-                    MessageType = response.MessageType,
-                    Fields = response.Fields,
-                    CorrelationId = response.CorrelationId,
-                    Timestamp = response.Timestamp
-                };
-
-                var success = await _messageSender.SendMessageAsync(tibcoMessage);
-
-                return new SendResult
-                {
-                    Success = success,
-                    Message = success ? "发送成功" : "发送失败",
-                    Subject = response.Subject
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"发送响应消息失败");
-                return new SendResult
-                {
-                    Success = false,
-                    Message = ex.Message,
-                    Subject = response.Subject
-                };
-            }
-        }
+    }
+    
+    internal class AlarmInfo
+    {
+        public string AlarmID { get; set; }
+        public string EquipmentID { get; set; }
+        public string AlarmCode { get; set; }
+        public string Description { get; set; }
+        public DateTime Timestamp { get; set; }
+        public bool Acknowledged { get; set; }
     }
 }
