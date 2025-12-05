@@ -11,4 +11,8 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\src\CommonLib\Common.csproj" />
+  </ItemGroup>
+
 </Project>

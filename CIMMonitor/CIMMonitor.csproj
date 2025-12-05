@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HsmsSimulator\HsmsSimulator.csproj" />
+    <ProjectReference Include="..\src\CommonLib\Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

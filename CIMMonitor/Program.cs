@@ -1,4 +1,5 @@
 using CIMMonitor.Forms;
+using Common;
 using log4net;
 using log4net.Config;
 using System.Reflection;
@@ -8,7 +9,7 @@ namespace CIMMonitor;
 
 public static class Program
 {
-    private static ILog? _logger;
+    private static ILoggerService? _logger;
 
     [STAThread]
     public static void Main()
@@ -20,11 +21,11 @@ public static class Program
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
         }
 
-        _logger = LogManager.GetLogger("CIMInterface");
+        _logger = new LoggerService(LogManager.GetLogger("CIMInterface"));
 
         try
         {
-            _logger.Info("=== 工业自动化系统启动 ===");
+            _logger.LogInfo("=== 工业自动化系统启动 ===");
 
             ApplicationConfiguration.Initialize();
 
@@ -39,23 +40,23 @@ public static class Program
         }
         catch (Exception ex)
         {
-            _logger?.Error("系统启动失败，程序终止", ex);
+            _logger?.LogError("系统启动失败，程序终止", ex);
             throw;
         }
     }
 
     private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
     {
-        _logger?.Error("未处理的UI线程异常", e.Exception);
+        _logger?.LogError("未处理的UI线程异常", e.Exception);
         MessageBox.Show($"发生异常: {e.Exception.Message}", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 
     private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        _logger?.Error("未处理的域异常", e.ExceptionObject as Exception);
+        _logger?.LogError("未处理的域异常", e.ExceptionObject as Exception);
     }
 
-    public static ILog? GetLogger()
+    public static ILoggerService? GetLogger()
     {
         return _logger;
     }
@@ -65,8 +66,8 @@ public static class Program
     /// </summary>
     /// <param name="logType">日志类型：SystemError、SystemOperation、DeviceCommunication</param>
     /// <returns>日志记录器</returns>
-    public static ILog GetLogger(string logType)
+    public static ILoggerService GetLogger(string logType)
     {
-        return LogManager.GetLogger(logType);
+        return new LoggerService(LogManager.GetLogger(logType));
     }
 }
