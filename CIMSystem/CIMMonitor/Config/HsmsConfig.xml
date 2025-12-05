@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HsmsConfig>
+  <Devices>
+    <Device ID="EQP1" Name="Equipment1" IPAddress="127.0.0.1" Port="5000" Role="Server" />
+    <Device ID="EQP2" Name="Equipment2" IPAddress="127.0.0.1" Port="5001" Role="Client" />
+    <Device ID="EQP3" Name="Equipment3" IPAddress="192.168.1.100" Port="5002" Role="Server" />
+  </Devices>
+  <Settings>
+    <Timeout>30000</Timeout>
+    <RetryCount>3</RetryCount>
+    <ConnectionInterval>5000</ConnectionInterval>
+  </Settings>
+</HsmsConfig>

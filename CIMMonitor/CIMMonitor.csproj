@@ -11,6 +11,7 @@
     <ApplicationTitle>CIM Monitor - 工业自动化监控中心</ApplicationTitle>
     <!-- 代码分析规则 -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HsmsSimulator\HsmsSimulator.csproj" />
+    <ProjectReference Include="..\..\CIMSystem\Common\Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

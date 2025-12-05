@@ -1,225 +1,87 @@
-# 工业自动化系统 .gitignore
-# 禁止提交敏感文件和临时文件
-
-# ==============================================
-# 环境变量和配置文件
-# ==============================================
-
-# 环境变量文件
-.env
-.env.local
-.env.*.local
-
-# 敏感配置文件
-appsettings.*.local.json
-appsettings.local.json
-
-# ==============================================
-# Visual Studio / Visual Studio Code
-# ==============================================
-
-# User-specific files
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
+```
 # Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-build/
+[C-Build]/
+_Build/
 bld/
 [Bb]in/
 [Oo]bj/
 
-# Visual Studio 2015/2017 cache/options directory
-.vs/
+# Visual Studio Code
+.vscode/
 
-# MSTest test Results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
+# Visual Studio
+*.user
+*.userosscache
+*.suo
+*.csproj.user
 
-# NUNIT
-*.VisualState.xml
-TestResult.xml
-
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
-**/Properties/launchSettings.json
-
-# ==============================================
-# NuGet Packages
-# ==============================================
-
-*.nupkg
-packages/
-**/packages/*
-!**/packages/build/
-
-# The packages folder can be ignored because of Package Restore
-**/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
-!**/[Pp]ackages/build/
-# Uncomment if necessary however generally it will be regenerated when needed
-#!**/[Pp]ackages/repositories.config
-
-# ==============================================
-# 日志文件
-# ==============================================
-
-logs/
+# Logs
 *.log
-*.log.*
 
-# Log files can contain sensitive information
-bin/Release/logs/
-bin/Debug/logs/
+# Environment
+.env
+.env.local
+*.env.*
 
-# ==============================================
-# 临时文件
-# ==============================================
-
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# ==============================================
-# 测试结果
-# ==============================================
+# Packages
+*.nupkg
+*.snupkg
+packages/
 
-TestResults/
-[Bb]uild[Ll]og.*
-*.trx
-*.user
+# Output directory
+bin/
+obj/
 
-# ==============================================
-# 数据库相关
-# ==============================================
+# Debug files
+*.ilk
+*.pdb
 
-*.db
-*.sqlite
-*.sqlite3
-*.mdf
-*.ldf
-
-# 数据库备份文件
-*.bak
-*.backup
-
-# ==============================================
-# 证书和密钥
-# ==============================================
-
-*.pfx
-*.p12
-*.cer
-*.pem
-*.key
-*.crt
-
-# Azure Key Vault certificates
-*.azurePubxml
-*.azurePubxml.user
-
-# ==============================================
-# 部署相关
-# ==============================================
-
-publish/
-publishUrl.txt
-
-# Web publish profiles
-Web.*.config
-
-# ==============================================
-# 第三方依赖
-# ==============================================
-
-node_modules/
-bower_components/
-
-# ==============================================
-# 缓存
-# ==============================================
-
-.cache/
-*.cache
-
-# ==============================================
-# IDE配置
-# ==============================================
-
-.idea/
-*.swp
-*.swo
-.project
-.classpath
-.settings/
-
-# Visual Studio Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# ==============================================
-# Windows
-# ==============================================
-
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# ==============================================
-# macOS
-# ==============================================
-
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# ==============================================
-# Linux
-# ==============================================
-
+# Temporary files
+*.tmp
 *~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
+*.swp
 
-# ==============================================
-# 敏感信息
-# ==============================================
+# Coverage
+coverage/
+htmlcov/
 
-# 密码文件
-passwords.txt
-secrets.txt
-credentials.txt
+# MyPy cache
+.mypy_cache/
 
-# API密钥
-api-keys.txt
-tokens.txt
+# PyTest cache
+.pytest_cache/
 
-# 连接字符串
-connection-strings.txt
+# Gradle
+.gradle/
+
+# Target directory (for various build systems)
+target/
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```

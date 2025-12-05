@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TibcoTibrvService", "TibcoT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HsmsSimulator", "HsmsSimulator\HsmsSimulator.csproj", "{19333641-9B6B-451F-A127-0127171D2087}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "CIMSystem\Common\Common.csproj", "{A1B2C3D4-E5F6-7890-ABCD-123456789012}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
