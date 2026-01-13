@@ -27,6 +27,16 @@ namespace CIMMonitor.Forms
         private List<DeviceInfo> devices = new List<DeviceInfo>();
 
         /// <summary>
+        /// HSMS连接服务
+        /// </summary>
+        private Services.HsmsConnectionService? _hsmsService;
+        
+        /// <summary>
+        /// KepServer监控服务
+        /// </summary>
+        private Services.KepServerMonitoringService? _kepServerService;
+        
+        /// <summary>
         /// HSMS设备管理器
         /// </summary>
         private Services.HsmsDeviceManager? _deviceManager;
@@ -43,6 +53,22 @@ namespace CIMMonitor.Forms
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private Button btnTestMessage;
+        private ComboBox cmbArchitectureSelector;  // 新增架构选择下拉框
+        private Button btnSwitchArchitecture;    // 新增架构切换按钮
+        
+        /// <summary>
+        /// 当前活动架构类型
+        /// </summary>
+        private ArchitectureType _currentArchitecture = ArchitectureType.KepServer;
+        
+        /// <summary>
+        /// 架构类型枚举
+        /// </summary>
+        private enum ArchitectureType
+        {
+            DirectPLC,    // PLC→上位机→CIM(SEMI/SECS)
+            KepServer     // PLC→KepServer→CIM(SEMI/SECS)
+        }
 
         /// <summary>
         /// 已添加的设备ID集合（避免重复添加）
@@ -63,6 +89,94 @@ namespace CIMMonitor.Forms
 
             try
             {
+                // 初始化HSMS连接服务
+                try
+                {
+                    // 从HSMS配置文件加载设备信息并初始化服务
+                    var hsmsConfigPath = Path.Combine(Application.StartupPath, "Config", "HsmsConfig.xml");
+                    if (File.Exists(hsmsConfigPath))
+                    {
+                        var xmlContent = File.ReadAllText(hsmsConfigPath);
+                        var doc = XDocument.Parse(xmlContent);
+                        
+                        // 查找第一个启用的HSMS设备进行初始化
+                        var devicesElement = doc.Root?.Element("Devices");
+                        if (devicesElement != null)
+                        {
+                            var firstDevice = devicesElement.Elements("Device")
+                                .FirstOrDefault(d => d.Attribute("Type")?.Value == "HSMS" && 
+                                                   bool.Parse(d.Attribute("Enabled")?.Value ?? "false"));
+                            
+                            if (firstDevice != null)
+                            {
+                                var deviceId = firstDevice.Attribute("Id")?.Value ?? "HOST_DEVICE_001";
+                                var secsElement = firstDevice.Element("SecsSettings");
+                                
+                                byte deviceIdValue = 1;
+                                int sessionIdValue = 0x1234;
+                                
+                                if (secsElement != null)
+                                {
+                                    var deviceIdVal = secsElement.Element("DeviceIdValue")?.Value;
+                                    var sessionIdVal = secsElement.Element("SessionIdValue")?.Value;
+                                    
+                                    deviceIdValue = ParseDeviceIdValue(deviceIdVal);
+                                    sessionIdValue = ParseSessionIdValue(sessionIdVal);
+                                }
+                                
+                                _hsmsService = new Services.HsmsConnectionService(deviceId, deviceIdValue, sessionIdValue);
+                                _hsmsService.ConnectionStatusChanged += OnHsmsConnectionStatusChanged;
+                                _hsmsService.MessageReceived += OnHsmsMessageReceived;
+                                
+                                txtInfo.Text += "✅ HSMS连接服务初始化成功\n";
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    txtInfo.Text = $"⚠️ HSMS连接服务初始化失败: {ex.Message}\n";
+                    System.Diagnostics.Debug.WriteLine($"[设备监控] HSMS连接服务初始化失败: {ex.Message}");
+                }
+
+                // 初始化KepServer监控服务
+                try
+                {
+                    _kepServerService = new Services.KepServerMonitoringService();
+                    _kepServerService.DataChanged += OnKepServerDataChanged;
+                    _kepServerService.MappingTriggered += OnKepServerMappingTriggered;
+                    
+                    var kepConfigPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.xml");
+                    if (File.Exists(kepConfigPath))
+                    {
+                        // 异步初始化KepServer服务
+                        _ = Task.Run(async () =>
+                        {
+                            bool initResult = await _kepServerService.InitializeAsync(kepConfigPath);
+                            this.Invoke(new Action(() =>
+                            {
+                                if (initResult)
+                                {
+                                    txtInfo.Text += "✅ KepServer监控服务初始化成功\n";
+                                }
+                                else
+                                {
+                                    txtInfo.Text += "⚠️ KepServer监控服务初始化失败\n";
+                                }
+                            }));
+                        });
+                    }
+                    else
+                    {
+                        txtInfo.Text += "⚠️ KepServer配置文件不存在\n";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    txtInfo.Text = $"⚠️ KepServer监控服务初始化失败: {ex.Message}\n";
+                    System.Diagnostics.Debug.WriteLine($"[设备监控] KepServer监控服务初始化失败: {ex.Message}");
+                }
+
                 // 初始化设备管理器（如果HsmsSimulator引用可用）
                 try
                 {
@@ -71,14 +185,13 @@ namespace CIMMonitor.Forms
                     _deviceManager.DeviceMessageReceived += OnDeviceMessageReceived;
 
                     // 显示成功信息
-                    txtInfo.Text = "设备监控已启动，等待HSMS/OPC消息...\n";
                     txtInfo.Text += "✅ 设备管理器初始化成功\n";
                     txtInfo.Text += "✅ 事件订阅已绑定\n";
                 }
                 catch (Exception ex)
                 {
                     // 如果初始化失败，记录但不阻止界面启动
-                    txtInfo.Text = $"警告: 设备管理器初始化失败，将以只读模式运行\n{ex.Message}\n";
+                    txtInfo.Text += $"⚠️ 设备管理器初始化失败，将以只读模式运行\n{ex.Message}\n";
                     System.Diagnostics.Debug.WriteLine($"[设备监控] 设备管理器初始化失败: {ex.Message}");
                 }
 
@@ -86,6 +199,7 @@ namespace CIMMonitor.Forms
 
                 // 自动连接已启用的设备
                 AutoConnectEnabledDevices();
+                UpdateArchitectureSelector();
 
                 StartAutoRefresh();
 
@@ -177,6 +291,8 @@ namespace CIMMonitor.Forms
             lblInfo = new Label();
             txtInfo = new TextBox();
             btnTestMessage = new Button();
+            cmbArchitectureSelector = new ComboBox();
+            btnSwitchArchitecture = new Button();
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
@@ -295,6 +411,28 @@ namespace CIMMonitor.Forms
             btnTestMessage.Text = "测试消息";
             btnTestMessage.UseVisualStyleBackColor = true;
             btnTestMessage.Click += BtnTestMessage_Click;
+            // 
+            // cmbArchitectureSelector
+            // 
+            cmbArchitectureSelector.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbArchitectureSelector.FormattingEnabled = true;
+            cmbArchitectureSelector.Location = new Point(1010, 350);
+            cmbArchitectureSelector.Name = "cmbArchitectureSelector";
+            cmbArchitectureSelector.Size = new Size(150, 25);
+            cmbArchitectureSelector.TabIndex = 11;
+            cmbArchitectureSelector.Items.Add("PLC→上位机→CIM(SEMI/SECS)");
+            cmbArchitectureSelector.Items.Add("PLC→KepServer→CIM(SEMI/SECS)");
+            cmbArchitectureSelector.SelectedIndex = 1; // 默认选择KepServer架构
+            // 
+            // btnSwitchArchitecture
+            // 
+            btnSwitchArchitecture.Location = new Point(1170, 350);
+            btnSwitchArchitecture.Name = "btnSwitchArchitecture";
+            btnSwitchArchitecture.Size = new Size(75, 37);
+            btnSwitchArchitecture.TabIndex = 12;
+            btnSwitchArchitecture.Text = "切换架构";
+            btnSwitchArchitecture.UseVisualStyleBackColor = true;
+            btnSwitchArchitecture.Click += BtnSwitchArchitecture_Click;
             //
             // dataGridViewTextBoxColumn3
             //
@@ -373,6 +511,8 @@ namespace CIMMonitor.Forms
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1260, 808);
+            Controls.Add(btnSwitchArchitecture);
+            Controls.Add(cmbArchitectureSelector);
             Controls.Add(txtInfo);
             Controls.Add(lblInfo);
             Controls.Add(btnDisconnect);
@@ -1964,5 +2104,206 @@ namespace CIMMonitor.Forms
                 }));
             }
         }
+
+        #region 统一数据服务相关方法
+
+        /// <summary>
+        /// 统一数据变更事件处理
+        /// </summary>
+        /// <summary>
+        /// HSMS连接状态变更事件处理
+        /// </summary>
+        private void OnHsmsConnectionStatusChanged(object? sender, bool isConnected)
+        {
+            this.Invoke(new Action(() =>
+            {
+                txtInfo.Text += $"🔗 [{DateTime.Now:HH:mm:ss}] HSMS连接状态: {(isConnected ? "已连接" : "已断开")}\n";
+                txtInfo.SelectionStart = txtInfo.Text.Length;
+                txtInfo.ScrollToCaret();
+            }));
+        }
+
+        /// <summary>
+        /// HSMS消息接收事件处理
+        /// </summary>
+        private void OnHsmsMessageReceived(object? sender, HsmsSimulator.Models.HsmsMessage e)
+        {
+            this.Invoke(new Action(() =>
+            {
+                txtInfo.Text += $"📨 [{DateTime.Now:HH:mm:ss}] HSMS消息: S{e.Stream}F{e.Function} - {e.Content}\n";
+                txtInfo.SelectionStart = txtInfo.Text.Length;
+                txtInfo.ScrollToCaret();
+            }));
+        }
+
+        /// <summary>
+        /// KepServer数据变更事件处理
+        /// </summary>
+        private void OnKepServerDataChanged(object? sender, Models.KepServer.DataChangedEvent e)
+        {
+            this.Invoke(new Action(() =>
+            {
+                txtInfo.Text += $"📊 [{DateTime.Now:HH:mm:ss}] KepServer数据变化: {e.Address} - {e.OldValue} -> {e.NewValue}\n";
+                txtInfo.SelectionStart = txtInfo.Text.Length;
+                txtInfo.ScrollToCaret();
+            }));
+        }
+
+        /// <summary>
+        /// KepServer映射触发事件处理
+        /// </summary>
+        private void OnKepServerMappingTriggered(object? sender, Models.KepServer.MappingTriggeredEvent e)
+        {
+            this.Invoke(new Action(() =>
+            {
+                txtInfo.Text += $"⚡ [{DateTime.Now:HH:mm:ss}] KepServer映射触发: {e.MappingId} - Bit: {e.BitNewValue}, Word: {e.WordValue}\n";
+                txtInfo.SelectionStart = txtInfo.Text.Length;
+                txtInfo.ScrollToCaret();
+            }));
+        }
+
+        /// <summary>
+        /// 创建默认架构配置
+        /// </summary>
+                            {
+                                new Models.DataMapping
+                                {
+                                    MappingId = "MAPPING001",
+                                    PlcAddress = "DB1.DBX0.0",
+                                    SecsVariable = "EQP_STATUS",
+                                    DataType = "Boolean",
+                                    UpdateRate = 500,
+                                    Enabled = true,
+                                    Description = "设备状态映射"
+                                }
+                            }
+                        }
+                    },
+                    KepServerConfigs = new List<Models.KepServerConfig>
+                    {
+                        new Models.KepServerConfig
+                        {
+                            KepServerSettings = new Models.KepServer.KepServerSettings
+                            {
+                                ConnectionTimeout = 30000,
+                                ReconnectInterval = 10000,
+                                MaxRetries = 3,
+                                UpdateRate = 100,
+                                EnableLogging = true,
+                                LogLevel = "Info"
+                            },
+                            Servers = new List<Models.KepServer.KepServer>
+                            {
+                                new Models.KepServer.KepServer
+                                {
+                                    ServerId = "KepServer_01",
+                                    ServerName = "主KepServer",
+                                    Host = "192.168.1.100",
+                                    Port = 49320,
+                                    ProtocolType = "opc",
+                                    Description = "生产线主服务器",
+                                    Enabled = true
+                                }
+                            }
+                        }
+                    },
+                    SecsGemConfig = new Models.SecsGemConfig
+                    {
+                        CimConnections = new List<Models.CimConnectionConfig>
+                        {
+                            new Models.CimConnectionConfig
+                            {
+                                ConnectionId = "CIM_CONN_01",
+                                ConnectionName = "CIM系统连接",
+                                Host = "192.168.1.200",
+                                Port = 5000,
+                                ConnectionType = "HSMS",
+                                DeviceId = 1,
+                                SessionId = 0x1234,
+                                Enabled = true,
+                                Description = "连接到CIM系统"
+                            }
+                        },
+                        SecsMessageConfig = new Models.SecsMessageConfig
+                        {
+                            MessageTimeout = 5000,
+                            RetryCount = 3,
+                            MaxMessageLength = 1024,
+                            HeartbeatInterval = 30000
+                        },
+                        DeviceIdMappings = new Dictionary<string, int>
+                        {
+                            {"PLC001", 1},
+                            {"PLC002", 2}
+                        }
+                    },
+                    GlobalSettings = new Models.GlobalSettings
+                    {
+                        LogLevel = "Info",
+                        EnableLogging = true,
+                        LogFilePath = "logs/cimmonitor.log",
+                        DataRetentionDays = 30,
+                        EnableHistoryStorage = true,
+                        HistoryStoragePath = "history/",
+                        MaxConnections = 10
+                    }
+                };
+
+                // 序列化为XML
+                var serializer = new System.Xml.Serialization.XmlSerializer(typeof(Models.ArchitectureConfig));
+                using var writer = new StreamWriter(configPath);
+                serializer.Serialize(writer, config);
+
+                System.Diagnostics.Debug.WriteLine($"[设备监控] 默认架构配置已创建: {configPath}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[设备监控] 创建默认架构配置失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 更新架构选择器
+        /// </summary>
+        private void UpdateArchitectureSelector()
+        /// <summary>
+        }
+        {
+            if (_unifiedDataService != null)
+            {
+                var currentArch = _unifiedDataService.GetCurrentArchitecture();
+                this.Invoke(new Action(() =>
+                {
+                    cmbArchitectureSelector.SelectedIndex = (int)currentArch;
+                    txtInfo.Text += $"📋 当前架构: {(currentArch == Models.ArchitectureConfig.ArchitectureType.DirectPLC ? "PLC→上位机→CIM(SEMI/SECS)" : "PLC→KepServer→CIM(SEMI/SECS)")}\n";
+                }));
+            }
+        }
+
+        /// <summary>
+        /// 切换架构按钮点击事件
+        /// </summary>
+        private async void BtnSwitchArchitecture_Click(object? sender, EventArgs e)
+        {
+            if (_unifiedDataService == null)
+            {
+                txtInfo.Text += "❌ 统一数据服务未初始化\n";
+                return;
+            }
+
+        /// <summary>
+        /// 获取架构显示名称
+        /// </summary>
+        private string GetArchitectureDisplayName(Models.ArchitectureConfig.ArchitectureType archType)
+        {
+            return archType switch
+            {
+                Models.ArchitectureConfig.ArchitectureType.DirectPLC => "PLC→上位机→CIM(SEMI/SECS)",
+                Models.ArchitectureConfig.ArchitectureType.KepServer => "PLC→KepServer→CIM(SEMI/SECS)",
+                _ => "未知架构"
+            };
+        }
+
+        #endregion
     }
 }
