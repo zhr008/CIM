@@ -1,36 +1,37 @@
 ```
 # Build artifacts
-bin/
-obj/
 *.exe
 *.dll
 *.pdb
 *.userprefs
+*.log
+*.tmp
 
 # Dependencies
 packages/
+lib/
 
-# Logs
-*.log
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
+# IDE files
 .vs/
-.vscode/
-.idea/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 
-# OS generated files
+# OS files
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
+desktop.ini
+
+# Configuration
+appsettings.Development.json
+appsettings.Production.json
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+Temp/
+temp/
 ```
-packages-microsoft-prod.deb
