@@ -1,67 +1,41 @@
 ```gitignore
-# Build artifacts and binaries
+# Build artifacts
+*.obj
 *.exe
 *.dll
 *.pdb
-*.obj
-*.o
-*.a
-*.lib
-*.so
-*.dylib
-*.class
-*.jar
-*.war
-*.ear
+*.userprefs
+*.user
+*.suo
+*.cache
+*.tlog
+*.log
+*.tmp
 
 # Dependencies
 packages/
 node_modules/
-venv/
-.venv/
-.env
-.env.local
-.env.*
+.nuget/
+.nuget.packages/
 
-# IDE and editor files
+# IDE specific
+.vs/
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
-*.log
+*.userprefs
+*.user
+*.suo
+*.cache
+
+# OS specific
+.DS_Store
 Thumbs.db
-.DS_Store
-
-# Build outputs
-bin/
-obj/
-Debug/
-Release/
-build/
-dist/
-target/
-out/
-
-# Testing and coverage
-.coverage
-coverage/
-htmlcov/
-.nyc_output/
-test-results/
-
-# Configuration backups
-*.bak
-*.backup
-*.orig
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
 ehthumbs.db
-Icon?
-Thumbs.db
+
+# Configuration
+*.userprefs
+*.user
+
+# Logs
+*.log
 ```

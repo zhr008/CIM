@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <TibrvService>
+    <NetworkInterface>127.0.0.1</NetworkInterface>
+    <Service>7500</Service>
+    <Daemon>tcp:7500</Daemon>
+    <WCFEndpoint>http://localhost:8080/MesService</WCFEndpoint>
+    <ConnectionTimeout>30000</ConnectionTimeout>
+    <RetryAttempts>3</RetryAttempts>
+  </TibrvService>
+  <Logging>
+    <Level>INFO</Level>
+    <FilePath>logs/tibrv_service.log</FilePath>
+  </Logging>
+</Configuration>

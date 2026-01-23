@@ -55,5 +55,10 @@ namespace Common.Utilities
         {
             return LoadConfig<KepServerConfig>(filePath);
         }
+
+        public static AppConfig LoadAppConfig(string filePath = "Config/Config.xml")
+        {
+            return LoadConfig<AppConfig>(filePath);
+        }
     }
 }

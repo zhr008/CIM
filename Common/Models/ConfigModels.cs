@@ -245,4 +245,69 @@ namespace Common.Models
             ProcessData = new Dictionary<string, object>();
         }
     }
+
+    [Serializable]
+    [XmlRoot("Configuration")]
+    public class AppConfig
+    {
+        [XmlElement("TibrvService")]
+        public TibrvServiceConfig TibrvService { get; set; }
+
+        [XmlElement("Logging")]
+        public LoggingConfig Logging { get; set; }
+
+        public AppConfig()
+        {
+            TibrvService = new TibrvServiceConfig();
+            Logging = new LoggingConfig();
+        }
+    }
+
+    [Serializable]
+    public class TibrvServiceConfig
+    {
+        [XmlElement("NetworkInterface")]
+        public string NetworkInterface { get; set; }
+
+        [XmlElement("Service")]
+        public string Service { get; set; }
+
+        [XmlElement("Daemon")]
+        public string Daemon { get; set; }
+
+        [XmlElement("WCFEndpoint")]
+        public string WCFEndpoint { get; set; }
+
+        [XmlElement("ConnectionTimeout")]
+        public int ConnectionTimeout { get; set; }
+
+        [XmlElement("RetryAttempts")]
+        public int RetryAttempts { get; set; }
+
+        public TibrvServiceConfig()
+        {
+            NetworkInterface = "127.0.0.1";
+            Service = "7500";
+            Daemon = "tcp:7500";
+            WCFEndpoint = "http://localhost:8080/MesService";
+            ConnectionTimeout = 30000;
+            RetryAttempts = 3;
+        }
+    }
+
+    [Serializable]
+    public class LoggingConfig
+    {
+        [XmlElement("Level")]
+        public string Level { get; set; }
+
+        [XmlElement("FilePath")]
+        public string FilePath { get; set; }
+
+        public LoggingConfig()
+        {
+            Level = "INFO";
+            FilePath = "logs/tibrv_service.log";
+        }
+    }
 }

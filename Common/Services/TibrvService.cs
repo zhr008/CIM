@@ -7,21 +7,21 @@ using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 
-namespace TibcoTibrvService.Services
+namespace Common.Services
 {
     /// <summary>
-    /// TIBCO集成服务 - 处理从CIMMonitor到WCF服务的数据流转
-    /// 实现完整的数据流: CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
+    /// Tibrv服务 - 处理从CIMMonitor到WCF服务的数据流转
+    /// 实现完整的数据流: CIMMonitor → TibrvService → WCFServices → ORACLE
     /// </summary>
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
-    public class TibcoIntegrationService
+    public class TibrvService
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(TibcoIntegrationService));
+        private static readonly ILog log = LogManager.GetLogger(typeof(TibrvService));
         
         private readonly ChannelFactory<IMesService> _wcfChannelFactory;
         private readonly IMesService _mesService;
         
-        public TibcoIntegrationService()
+        public TibrvService()
         {
             // 初始化WCF服务连接
             var binding = new BasicHttpBinding();
@@ -295,7 +295,7 @@ namespace TibcoTibrvService.Services
             }
             catch (Exception ex)
             {
-                log.Error("释放TibcoIntegrationService资源时出错", ex);
+                log.Error("释放TibrvService资源时出错", ex);
             }
         }
     }

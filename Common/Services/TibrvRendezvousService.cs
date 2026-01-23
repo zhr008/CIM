@@ -4,17 +4,17 @@ using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 
-namespace TibcoTibrvService.Services
+namespace Common.Services
 {
-    // Mock TIBCO Rendezvous service for integration with WCF
-    public class TibcoRendezvousService
+    // Mock TIBRV Rendezvous service for integration with WCF
+    public class TibrvRendezvousService
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(TibcoRendezvousService));
+        private static readonly ILog log = LogManager.GetLogger(typeof(TibrvRendezvousService));
         private bool isConnected;
         
         public event EventHandler<EquipmentMessage> OnMessageReceived;
         
-        public TibcoRendezvousService()
+        public TibrvRendezvousService()
         {
             isConnected = false;
         }
@@ -28,7 +28,7 @@ namespace TibcoTibrvService.Services
                 
                 isConnected = true;
                 
-                log.Info($"TIBCO Rendezvous initialized: network={networkInterface}, service={service}, daemon={daemon}");
+                log.Info($"TIBRV Rendezvous initialized: network={networkInterface}, service={service}, daemon={daemon}");
                 
                 // Start message listener
                 _ = Task.Run(MessageListener);
@@ -37,7 +37,7 @@ namespace TibcoTibrvService.Services
             }
             catch (Exception ex)
             {
-                log.Error($"Error initializing TIBCO Rendezvous: {ex.Message}", ex);
+                log.Error($"Error initializing TIBRV Rendezvous: {ex.Message}", ex);
                 return false;
             }
         }
@@ -56,19 +56,19 @@ namespace TibcoTibrvService.Services
                         // Generate a mock message
                         var mockMessage = new EquipmentMessage
                         {
-                            EquipmentID = "TIBCO_MOCK",
-                            MessageType = "TIBCO_EVENT",
-                            MessageContent = "Mock TIBCO message",
+                            EquipmentID = "TIBRV_MOCK",
+                            MessageType = "TIBRV_EVENT",
+                            MessageContent = "Mock TIBRV message",
                             Timestamp = DateTime.Now
                         };
                         
                         OnMessageReceived?.Invoke(this, mockMessage);
-                        log.Info($"TIBCO message received: {mockMessage.MessageContent}");
+                        log.Info($"TIBRV message received: {mockMessage.MessageContent}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    log.Error($"Error in TIBCO message listener: {ex.Message}", ex);
+                    log.Error($"Error in TIBRV message listener: {ex.Message}", ex);
                 }
             }
         }
@@ -77,22 +77,22 @@ namespace TibcoTibrvService.Services
         {
             if (!isConnected)
             {
-                log.Warn("Cannot send message: TIBCO not connected");
+                log.Warn("Cannot send message: TIBRV not connected");
                 return false;
             }
             
             try
             {
-                log.Info($"Sending message to TIBCO subject '{subject}': {message.MessageContent}");
+                log.Info($"Sending message to TIBRV subject '{subject}': {message.MessageContent}");
                 
-                // In a real implementation, this would send the message via TIBCO
+                // In a real implementation, this would send the message via TIBRV
                 // For now, we just log it
                 
                 return true;
             }
             catch (Exception ex)
             {
-                log.Error($"Error sending TIBCO message: {ex.Message}", ex);
+                log.Error($"Error sending TIBRV message: {ex.Message}", ex);
                 return false;
             }
         }
@@ -101,19 +101,19 @@ namespace TibcoTibrvService.Services
         {
             if (!isConnected)
             {
-                log.Warn("Cannot send XML message: TIBCO not connected");
+                log.Warn("Cannot send XML message: TIBRV not connected");
                 return false;
             }
             
             try
             {
-                log.Info($"Sending XML message to TIBCO subject '{subject}': {xmlContent}");
+                log.Info($"Sending XML message to TIBRV subject '{subject}': {xmlContent}");
                 
                 return true;
             }
             catch (Exception ex)
             {
-                log.Error($"Error sending XML message to TIBCO: {ex.Message}", ex);
+                log.Error($"Error sending XML message to TIBRV: {ex.Message}", ex);
                 return false;
             }
         }
@@ -121,7 +121,7 @@ namespace TibcoTibrvService.Services
         public void Disconnect()
         {
             isConnected = false;
-            log.Info("TIBCO Rendezvous disconnected");
+            log.Info("TIBRV Rendezvous disconnected");
         }
         
         public bool IsConnected => isConnected;
