@@ -4,7 +4,7 @@ using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 
-namespace TibcoTibrvService.Services
+namespace WCFServices.Services.Tibco
 {
     // Mock TIBCO Rendezvous service for integration with WCF
     public class TibcoRendezvousService

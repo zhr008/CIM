@@ -20,7 +20,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HsmsSimulator\HsmsSimulator.csproj" />
-    <ProjectReference Include="..\Common\Common.csproj" />
+    <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Common\Models\ConfigModels.cs" />
+    <Compile Include="Common\Utilities\ConfigManager.cs" />
   </ItemGroup>
 
   <ItemGroup>

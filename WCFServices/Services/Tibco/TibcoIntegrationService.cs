@@ -7,7 +7,7 @@ using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 
-namespace WCFServices.Services
+namespace WCFServices.Services.Tibco
 {
     /// <summary>
     /// TIBCO集成服务 - 处理从CIMMonitor到WCF服务的数据流转

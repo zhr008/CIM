@@ -1,67 +1,34 @@
-```gitignore
-# Build artifacts and binaries
+```
+# Build artifacts
+*.sln.bak
+bin/
+obj/
 *.exe
 *.dll
 *.pdb
-*.obj
-*.o
-*.a
-*.lib
-*.so
-*.dylib
-*.class
-*.jar
-*.war
-*.ear
+*.user
 
 # Dependencies
 packages/
 node_modules/
-venv/
-.venv/
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Environment
 .env
 .env.local
-.env.*
+*.env.*
 
-# IDE and editor files
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-*.log
-Thumbs.db
-.DS_Store
-
-# Build outputs
-bin/
-obj/
-Debug/
-Release/
-build/
-dist/
-target/
-out/
-
-# Testing and coverage
-.coverage
-coverage/
-htmlcov/
-.nyc_output/
-test-results/
-
-# Configuration backups
-*.bak
-*.backup
-*.orig
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Icon?
 Thumbs.db
 ```
