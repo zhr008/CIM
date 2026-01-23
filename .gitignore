@@ -1,36 +1,67 @@
-```
-# Build artifacts
-bin/
-obj/
+```gitignore
+# Build artifacts and binaries
 *.exe
 *.dll
 *.pdb
-*.userprefs
+*.obj
+*.o
+*.a
+*.lib
+*.so
+*.dylib
+*.class
+*.jar
+*.war
+*.ear
 
 # Dependencies
 packages/
-
-# Logs
-*.log
-
-# Environment
+node_modules/
+venv/
+.venv/
 .env
 .env.local
-*.env.*
+.env.*
 
-# Editors
-.vs/
+# IDE and editor files
 .vscode/
 .idea/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
+*.swp
+*.swo
+*.tmp
+*.log
+Thumbs.db
+.DS_Store
+
+# Build outputs
+bin/
+obj/
+Debug/
+Release/
+build/
+dist/
+target/
+out/
+
+# Testing and coverage
+.coverage
+coverage/
+htmlcov/
+.nyc_output/
+test-results/
+
+# Configuration backups
+*.bak
+*.backup
+*.orig
 
 # OS generated files
 .DS_Store
-Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
 Icon?
+Thumbs.db
 ```
-packages-microsoft-prod.deb

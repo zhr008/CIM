@@ -1,4 +1,6 @@
 using CIMMonitor.Forms;
+using CIMMonitor.Services;
+using CIMMonitor.Models.KepServer;
 using log4net;
 using log4net.Config;
 using System.Reflection;
@@ -9,6 +11,9 @@ namespace CIMMonitor;
 public static class Program
 {
     private static ILog? _logger;
+    
+    // 服务容器
+    private static readonly Dictionary<Type, object> _services = new();
 
     [STAThread]
     public static void Main()
@@ -26,6 +31,9 @@ public static class Program
         {
             _logger.Info("=== 工业自动化系统启动 ===");
 
+            // 初始化服务
+            InitializeServices();
+
             ApplicationConfiguration.Initialize();
 
             // 配置全局异常处理
@@ -42,6 +50,86 @@ public static class Program
             _logger?.Error("系统启动失败，程序终止", ex);
             throw;
         }
+        finally
+        {
+            // 清理服务
+            CleanupServices();
+        }
+    }
+
+    /// <summary>
+    /// 初始化服务
+    /// </summary>
+    private static void InitializeServices()
+    {
+        try
+        {
+            // 初始化KepServer监控服务
+            var kepServerService = new KepServerMonitoringService();
+            var kepServerConfigPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.xml");
+            _ = kepServerService.InitializeAsync(kepServerConfigPath).Result;
+            _services[typeof(IKepServerMonitoringService)] = kepServerService;
+
+            // 初始化KepServer事件处理器
+            var kepServerEventHandler = new KepServerEventHandler();
+            _ = kepServerEventHandler.InitializeAsync(kepServerService).Result;
+            _services[typeof(KepServerEventHandler)] = kepServerEventHandler;
+
+            // 初始化HSMS设备管理器
+            var hsmsDeviceManager = new HsmsDeviceManager();
+            _services[typeof(HsmsDeviceManager)] = hsmsDeviceManager;
+
+            _logger.Info("服务初始化完成");
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error("初始化服务失败", ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 清理服务
+    /// </summary>
+    private static void CleanupServices()
+    {
+        try
+        {
+            // 释放所有服务
+            foreach (var service in _services.Values)
+            {
+                if (service is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            _services.Clear();
+            _logger.Info("服务清理完成");
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error("清理服务时出错", ex);
+        }
+    }
+
+    /// <summary>
+    /// 获取指定类型的已注册服务
+    /// </summary>
+    public static T? GetService<T>() where T : class
+    {
+        if (_services.TryGetValue(typeof(T), out var service))
+        {
+            return (T)service;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 注册服务
+    /// </summary>
+    public static void RegisterService<T>(T service) where T : class
+    {
+        _services[typeof(T)] = service;
     }
 
     private static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)

@@ -1,7 +1,12 @@
 CIM System
 ========
 
-A complete Computer Integrated Manufacturing (CIM) system that provides device monitoring, communication protocol simulation, business processing, and message passing functionality.
+A complete Computer Integrated Manufacturing (CIM) system that implements the following data flows:
+
+1. **PLC → KepServerEX → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE**
+2. **PCL → HSMS → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE**
+
+The system provides device monitoring, communication protocol simulation, business processing, and message passing functionality.
 
 Components
 ----------
@@ -10,6 +15,7 @@ Components
 - Windows Forms application
 - Device monitoring with HSMS protocol and KepServer (OPC protocol) support
 - Configuration via HsmsConfig.xml and KepServerConfig.xml
+- Unified DataFlowService for handling both data streams
 - TIBCO message integration
 - log4net logging
 
@@ -30,6 +36,7 @@ Components
 - Data access layer
 - WCF service integration
 - XML message processing
+- Enhanced integration service for complete data flow
 
 Directory Structure
 -------------------

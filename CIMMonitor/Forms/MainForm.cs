@@ -1,4 +1,6 @@
 using System.Windows.Forms;
+using CIMMonitor.Services;
+using CIMMonitor.Models.KepServer;
 
 namespace CIMMonitor.Forms
 {
@@ -19,6 +21,9 @@ namespace CIMMonitor.Forms
         private ProductionDataForm? productionDataForm;
         private AlarmManagerForm? alarmManagerForm;
         private TibcoMessageForm? tibcoMessageForm;
+        
+        // 新增数据流向服务
+        private DataFlowService? _dataFlowService;
 
         public MainForm()
         {
@@ -46,6 +51,9 @@ namespace CIMMonitor.Forms
 
             // 初始化各个功能页面（延迟加载）
             InitializeTabPages();
+            
+            // 初始化数据流向服务
+            InitializeDataFlowService();
         }
 
         private Panel CreateWelcomePanel()
@@ -226,6 +234,68 @@ namespace CIMMonitor.Forms
             tabPageTibco.Controls.Add(tibcoMessageForm);
             tibcoMessageForm.Show();
         }
+        
+        /// <summary>
+        /// 初始化数据流向服务
+        /// </summary>
+        private void InitializeDataFlowService()
+        {
+            try
+            {
+                // 获取依赖的服务实例
+                var kepServerService = Program.GetService<IKepServerMonitoringService>();
+                var kepServerEventHandler = Program.GetService<KepServerEventHandler>();
+                var hsmsDeviceManager = Program.GetService<HsmsDeviceManager>();
+                
+                if (kepServerService != null && kepServerEventHandler != null && hsmsDeviceManager != null)
+                {
+                    _dataFlowService = new DataFlowService(kepServerService, kepServerEventHandler, hsmsDeviceManager);
+                    
+                    // 启动数据流向服务
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _dataFlowService.StartAsync();
+                            log4net.LogManager.GetLogger(typeof(MainForm)).Info("数据流向服务已启动");
+                        }
+                        catch (Exception ex)
+                        {
+                            log4net.LogManager.GetLogger(typeof(MainForm)).Error("启动数据流向服务失败", ex);
+                        }
+                    });
+                }
+                else
+                {
+                    log4net.LogManager.GetLogger(typeof(MainForm)).Error("无法获取必要的服务实例来初始化数据流向服务");
+                }
+            }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(MainForm)).Error("初始化数据流向服务时出错", ex);
+            }
+        }
+        
+        /// <summary>
+        /// 停止数据流向服务
+        /// </summary>
+        private async void StopDataFlowService()
+        {
+            try
+            {
+                if (_dataFlowService != null)
+                {
+                    await _dataFlowService.StopAsync();
+                    _dataFlowService.Dispose();
+                    _dataFlowService = null;
+                    log4net.LogManager.GetLogger(typeof(MainForm)).Info("数据流向服务已停止");
+                }
+            }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(MainForm)).Error("停止数据流向服务时出错", ex);
+            }
+        }
 
         // 菜单事件处理（切换Tab页）
         private void ShowWelcome()
@@ -320,6 +390,14 @@ namespace CIMMonitor.Forms
 
             // 创建菜单栏
             CreateMenuStrip();
+        }
+        
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // 停止数据流向服务
+            StopDataFlowService().Wait(5000); // 等待最多5秒
+
+            base.OnFormClosing(e);
         }
 
         private void CreateMenuStrip()

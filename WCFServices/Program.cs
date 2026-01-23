@@ -28,11 +28,22 @@ namespace WCFServices
             // 配置WCF endpoints
             app.UseServiceModel();
 
-            // 启动TIBCO适配器
-            var tibcoAdapter = app.Services.GetService<ITibcoAdapter>();
-            if (tibcoAdapter != null)
+            // 启动TIBCO订阅者服务
+            var tibcoSubscriber = app.Services.GetService<TibcoSubscriberService>();
+            if (tibcoSubscriber != null)
             {
-                tibcoAdapter.Start();
+                // 在后台启动TIBCO订阅者服务
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await tibcoSubscriber.StartAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"TIBCO订阅者服务启动失败: {ex.Message}");
+                    }
+                });
             }
 
             // 启动WCF服务
@@ -66,6 +77,9 @@ namespace WCFServices
             services.AddSingleton<ITibcoMessageSender, TibcoMessageService>();
             services.AddSingleton<ITibcoMessageListener, TibcoMessageListener>();
             services.AddSingleton<ITibcoAdapter, TibcoAdapter>();
+            
+            // 添加TIBCO订阅者服务
+            services.AddSingleton<TibcoSubscriberService>();
 
             // 配置业务服务
             services.AddScoped<IMesBusinessService, MesBusinessService>();

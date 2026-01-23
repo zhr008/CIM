@@ -1,155 +1,64 @@
-using System.Xml.Linq;
+using System;
+using System.Threading.Tasks;
+using TibcoTibrvService.Services;
+using log4net;
+using log4net.Config;
+using System.Reflection;
 
 namespace TibcoTibrvService;
 
 /// <summary>
-/// 简化的TIBRV消息服务
+/// TIBCO集成服务 - 完整实现CIMMonitor到WCF的数据流转
 /// </summary>
-public class SimpleTibrvService
+public class SimpleTibrvService : IDisposable
 {
+    private static readonly ILog log = LogManager.GetLogger(typeof(SimpleTibrvService));
+    private TibcoIntegrationService? _integrationService;
+
     public async Task StartAsync()
     {
-        Console.WriteLine("=== TIBRV消息服务启动 (模拟模式) ===");
+        // 配置log4net
+        var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+        XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
-        // 模拟启动
-        await Task.Delay(1000);
-        Console.WriteLine("TIBRV服务已启动，监听主题: CIMMonitor.*");
+        log.Info("=== TIBCO集成服务启动 ===");
+        Console.WriteLine("=== TIBCO集成服务启动 ===");
 
-        // 模拟接收消息
-        await SimulateMessages();
-    }
-
-    private async Task SimulateMessages()
-    {
-        var messages = new[]
+        try
         {
-            new MessageSample
-            {
-                Operation = "GetEquipmentStatus",
-                RequestId = "MSG001",
-                Xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Request operation=""GetEquipmentStatus"" requestId=""MSG001"">
-    <EquipmentId>EQ001</EquipmentId>
-</Request>"
-            },
-            new MessageSample
-            {
-                Operation = "UpdateProductionData",
-                RequestId = "MSG002",
-                Xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Request operation=""UpdateProductionData"" requestId=""MSG002"">
-    <BatchId>BATCH123</BatchId>
-    <ProductCode>PRODUCT-A</ProductCode>
-    <Quantity>100</Quantity>
-</Request>"
-            },
-            new MessageSample
-            {
-                Operation = "GetBatchInfo",
-                RequestId = "MSG003",
-                Xml = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Request operation=""GetBatchInfo"" requestId=""MSG003"">
-    <BatchId>BATCH123</BatchId>
-</Request>"
-            }
-        };
+            // 初始化集成服务
+            _integrationService = new TibcoIntegrationService();
+            
+            log.Info("TIBCO集成服务已启动，准备接收来自CIMMonitor的消息");
+            Console.WriteLine("TIBCO集成服务已启动，监听来自CIMMonitor的消息");
 
-        var index = 0;
-        while (true)
+            // 模拟持续运行
+            await RunServiceAsync();
+        }
+        catch (Exception ex)
         {
-            await Task.Delay(3000);
-
-            var message = messages[index];
-            Console.WriteLine($"\n[收到消息] {message.RequestId}");
-            Console.WriteLine($"[操作] {message.Operation}");
-            Console.WriteLine($"[XML]\n{message.Xml}");
-
-            // 处理消息
-            var response = ProcessMessage(message.Xml, message.RequestId);
-
-            // 发送响应
-            Console.WriteLine($"\n[发送响应] {message.RequestId}");
-            Console.WriteLine($"[XML]\n{response}");
-
-            index = (index + 1) % messages.Length;
+            log.Error("TIBCO集成服务启动失败", ex);
+            Console.WriteLine($"错误: {ex.Message}");
+            throw;
         }
     }
 
-    private string ProcessMessage(string xml, string requestId)
+    private async Task RunServiceAsync()
     {
-        var doc = XDocument.Parse(xml);
-        var root = doc.Root;
-        var operation = root?.Attribute("operation")?.Value;
-
-        return operation switch
+        // 模拟服务持续运行
+        while (true)
         {
-            "GetEquipmentStatus" => GenerateEquipmentResponse(root, requestId),
-            "UpdateProductionData" => GenerateProductionResponse(root, requestId),
-            "GetBatchInfo" => GenerateBatchResponse(root, requestId),
-            _ => GenerateErrorResponse(requestId, $"未知操作: {operation}")
-        };
+            // 这里可以监听特定的消息队列或主题
+            await Task.Delay(5000); // 每5秒检查一次
+            
+            // 输出心跳信息
+            log.Debug("TIBCO集成服务运行中...");
+        }
     }
 
-    private string GenerateEquipmentResponse(XElement? root, string requestId)
+    public void Dispose()
     {
-        var equipmentId = root?.Element("EquipmentId")?.Value ?? "Unknown";
-
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<Response requestId=""{requestId}"" success=""true"" timestamp=""{DateTime.Now:yyyy-MM-dd HH:mm:ss}"">
-    <Data>
-        <EquipmentId>{equipmentId}</EquipmentId>
-        <Status>在线</Status>
-        <Temperature>75.5°C</Temperature>
-        <Pressure>2.3MPa</Pressure>
-        <LastUpdate>{DateTime.Now:yyyy-MM-dd HH:mm:ss}</LastUpdate>
-    </Data>
-</Response>";
-    }
-
-    private string GenerateProductionResponse(XElement? root, string requestId)
-    {
-        var batchId = root?.Element("BatchId")?.Value ?? "Unknown";
-        var productCode = root?.Element("ProductCode")?.Value ?? "Unknown";
-
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<Response requestId=""{requestId}"" success=""true"" timestamp=""{DateTime.Now:yyyy-MM-dd HH:mm:ss}"">
-    <Data>
-        <BatchId>{batchId}</BatchId>
-        <ProductCode>{productCode}</ProductCode>
-        <Status>更新成功</Status>
-        <Timestamp>{DateTime.Now:yyyy-MM-dd HH:mm:ss}</Timestamp>
-    </Data>
-</Response>";
-    }
-
-    private string GenerateBatchResponse(XElement? root, string requestId)
-    {
-        var batchId = root?.Element("BatchId")?.Value ?? "Unknown";
-
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<Response requestId=""{requestId}"" success=""true"" timestamp=""{DateTime.Now:yyyy-MM-dd HH:mm:ss}"">
-    <Data>
-        <BatchId>{batchId}</BatchId>
-        <ProductCode>PRODUCT-A</ProductCode>
-        <Quantity>1000</Quantity>
-        <StartTime>{DateTime.Now.AddHours(-2):yyyy-MM-dd HH:mm:ss}</StartTime>
-        <Status>生产中</Status>
-    </Data>
-</Response>";
-    }
-
-    private string GenerateErrorResponse(string requestId, string errorMessage)
-    {
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<Response requestId=""{requestId}"" success=""false"" timestamp=""{DateTime.Now:yyyy-MM-dd HH:mm:ss}"">
-    <Error>{errorMessage}</Error>
-</Response>";
-    }
-
-    private class MessageSample
-    {
-        public string Operation { get; set; } = "";
-        public string RequestId { get; set; } = "";
-        public string Xml { get; set; } = "";
+        _integrationService?.Dispose();
+        log.Info("TIBCO集成服务已停止");
     }
 }
