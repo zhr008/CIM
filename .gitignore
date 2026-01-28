@@ -1,46 +1,39 @@
 ```
 # Build artifacts
-bin/
-obj/
-*.dll
+*.obj
 *.exe
+*.dll
 *.pdb
-*.config
+*.user
+*.aps
+*.ilk
+*.iobj
+*.ipdb
+*.tlog
+*.exp
+*.lib
 *.manifest
 
 # Dependencies
 packages/
-node_modules/
-vendor/
+bin/
+obj/
+*.nupkg
+project.lock.json
 
 # Logs
 *.log
 
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editor/IDE
-.vscode/
-.idea/
-*.userprefs
-*.userosscache
-*.suo
-*.user
-*.aps
-*.ncb
-*.opendb
-*.opensdf
+# Environment specific
+app.config
+connectionStrings.config
 
 # OS generated files
 .DS_Store
 Thumbs.db
 ehthumbs.db
 Icon?
-desktop.ini
-
-# Testing
-TestResults/
-coverage/
+._*
+.Spotlight-V100
+.Trashes
 ```

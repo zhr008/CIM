@@ -1,6 +1,7 @@
 using CoreWCF.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WCFServices.Models;
 using WCFServices.Services;
@@ -52,46 +53,26 @@ namespace WCFServices
                 builder.SetMinimumLevel(LogLevel.Information);
             });
 
-            // 配置Oracle数据库
-            var oracleConfig = new OracleConfig
+            // 添加配置
+            services.Configure<OracleConfig>(options =>
             {
-                ConnectionString = "Data Source=localhost:1521/XE;User Id=system;Password=oracle;Connection Timeout=30;",
-                CommandTimeout = 30,
-                EnableLogging = true,
-                MaxPoolSize = 100,
-                MinPoolSize = 5,
-                ConnectionTimeout = 30
-            };
-            services.AddSingleton(oracleConfig);
-            services.AddSingleton<IOracleDataAccess, OracleDataAccess>();
+                options.ConnectionString = "Data Source=localhost:1521/XE;User Id=system;Password=oracle;Connection Timeout=30;";
+                options.CommandTimeout = 30;
+                options.EnableLogging = true;
+                options.MaxPoolSize = 100;
+                options.MinPoolSize = 5;
+                options.ConnectionTimeout = 30;
+            });
+
+            // 注册Dapper-based Oracle访问服务
+            services.AddScoped<IOracleDataAccess, OracleDataAccess>();
 
             // 配置TIBCO服务
-            services.AddSingleton<TibrvRendezvousService>();
-            services.AddSingleton<ITibcoMessageService>(provider =>
-            {
-                var logger = provider.GetRequiredService<ILogger<TibcoMessageService>>();
-                var tibcoService = provider.GetRequiredService<TibrvRendezvousService>();
-                return new TibcoMessageService(logger, tibcoService);
-            });
-            services.AddSingleton<ITibcoMessageSender>(provider =>
-            {
-                var logger = provider.GetRequiredService<ILogger<TibcoMessageService>>();
-                var tibcoService = provider.GetRequiredService<TibrvRendezvousService>();
-                return new TibcoMessageService(logger, tibcoService);
-            });
-            services.AddSingleton<ITibcoMessageListener>(provider =>
-            {
-                var businessService = provider.GetRequiredService<IMesBusinessService>();
-                var logger = provider.GetRequiredService<ILogger<TibcoMessageListener>>();
-                return new TibcoMessageListener(businessService, logger);
-            });
-            services.AddSingleton<ITibcoAdapter>(provider =>
-            {
-                var messageService = provider.GetRequiredService<ITibcoMessageService>();
-                var businessService = provider.GetRequiredService<IMesBusinessService>();
-                var logger = provider.GetRequiredService<ILogger<TibcoAdapter>>();
-                return new TibcoAdapter(messageService, businessService, logger);
-            });
+            services.AddSingleton<TibrvService>(); // 使用Common.Services中的TibrvService
+            services.AddScoped<ITibcoMessageService, TibcoMessageService>();
+            services.AddScoped<ITibcoMessageSender, TibcoMessageService>();
+            services.AddScoped<ITibcoMessageListener, TibcoMessageListener>();
+            services.AddScoped<ITibcoAdapter, TibcoAdapter>();
             
             // 添加TIBCO订阅者服务
             services.AddSingleton<TibcoSubscriberService>();
@@ -101,7 +82,7 @@ namespace WCFServices
 
             // 配置WCF服务
             services.AddServiceModelServices();
-            services.AddSingleton<IMesService, MesService>();
+            services.AddScoped<IMesService, MesService>();
         }
     }
 
@@ -112,8 +93,13 @@ namespace WCFServices
             services.AddServiceModelServices();
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
             app.UseServiceModel(builder =>
             {
                 builder.AddService<MesService>();
