@@ -1,37 +1,30 @@
 using System;
 using System.Collections.Generic;
-using System.ServiceModel;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 
 namespace Common.Services
 {
     /// <summary>
-    /// Tibrv服务 - 处理从CIMMonitor到WCF服务的数据流转
-    /// 实现完整的数据流: CIMMonitor → TibrvService → WCFServices → ORACLE
+    /// Tibrv服务 - 作为CIMMonitor和WCFServices之间的桥梁
+    /// 数据流向: PLC/KepServerEX/HSMS → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
     /// </summary>
-    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
     public class TibrvService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TibrvService));
         
-        private readonly ChannelFactory<IMesService> _wcfChannelFactory;
-        private readonly IMesService _mesService;
+        private readonly TibrvRendezvousService _tibrvService;
         
         public TibrvService()
         {
-            // 初始化WCF服务连接
-            var binding = new BasicHttpBinding();
-            var endpoint = new EndpointAddress("http://localhost:8080/MesService");
-            _wcfChannelFactory = new ChannelFactory<IMesService>(binding, endpoint);
-            _mesService = _wcfChannelFactory.CreateChannel();
+            _tibrvService = new TibrvRendezvousService();
         }
         
         /// <summary>
         /// 处理来自CIMMonitor的设备消息
+        /// 将消息转换为XML并通过TIBCO发送到WCFServices
         /// </summary>
         public async Task<string> ProcessEquipmentMessageAsync(EquipmentMessage message)
         {
@@ -39,11 +32,27 @@ namespace Common.Services
             {
                 log.Info($"处理设备消息: {message.EquipmentID} - {message.MessageType}");
                 
-                // 调用WCF服务处理消息
-                var result = await Task.Run(() => _mesService.ProcessEquipmentMessage(message));
+                // 将设备消息转换为XML格式
+                var xmlContent = ConvertEquipmentMessageToXml(message);
                 
-                log.Info($"设备消息处理结果: {result}");
-                return result;
+                // 确定目标主题，根据消息类型发送到相应的WCFServices端点
+                var subject = DetermineSubjectFromMessageType(message.MessageType, message.EquipmentID);
+                
+                // 通过TIBCO发送XML消息到WCFServices
+                var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
+                
+                if (sendResult)
+                {
+                    var result = $"消息已发送到主题 '{subject}'";
+                    log.Info(result);
+                    return result;
+                }
+                else
+                {
+                    var result = $"发送消息到主题 '{subject}' 失败";
+                    log.Error(result);
+                    return result;
+                }
             }
             catch (Exception ex)
             {
@@ -93,6 +102,7 @@ namespace Common.Services
         
         /// <summary>
         /// 处理设备XML消息
+        /// 直接通过TIBCO发送XML消息到WCFServices
         /// </summary>
         private async Task<string> ProcessEquipmentXmlMessage(XDocument doc)
         {
@@ -119,11 +129,29 @@ namespace Common.Services
                 }
             }
             
-            return await ProcessEquipmentMessageAsync(equipmentMessage);
+            // 直接发送原始XML内容到WCFServices
+            var xmlContent = doc.ToString();
+            var subject = DetermineSubjectFromMessageType(messageType, equipmentId);
+            
+            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
+            
+            if (sendResult)
+            {
+                var result = $"设备XML消息已发送到主题 '{subject}'";
+                log.Info(result);
+                return result;
+            }
+            else
+            {
+                var result = $"发送设备XML消息到主题 '{subject}' 失败";
+                log.Error(result);
+                return result;
+            }
         }
         
         /// <summary>
         /// 处理生产数据XML消息
+        /// 直接通过TIBCO发送XML消息到WCFServices
         /// </summary>
         private async Task<string> ProcessProductionXmlMessage(XDocument doc)
         {
@@ -131,48 +159,29 @@ namespace Common.Services
             var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "Unknown";
             var processStepId = doc.Root?.Element("ProcessStepId")?.Value ?? "Unknown";
             
-            var productionData = new ProductionData
-            {
-                LotId = batchId,
-                EquipmentId = equipmentId,
-                ProcessStepId = processStepId,
-                StartTime = DateTime.Now,
-                Status = "Completed",
-                Result = "Success",
-                OperatorId = "System",
-                Measurements = new Dictionary<string, double>()
-            };
+            // 直接发送原始XML内容到WCFServices
+            var xmlContent = doc.ToString();
+            var subject = DetermineSubjectFromMessageType("PRODUCTION_DATA", equipmentId);
             
-            // 添加测量数据
-            var measurementsElement = doc.Root?.Element("Measurements");
-            if (measurementsElement != null)
+            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
+            
+            if (sendResult)
             {
-                foreach (var measurement in measurementsElement.Elements())
-                {
-                    if (double.TryParse(measurement.Value, out double value))
-                    {
-                        productionData.Measurements[measurement.Name.LocalName] = value;
-                    }
-                }
+                var result = $"生产数据XML消息已发送到主题 '{subject}'";
+                log.Info(result);
+                return result;
             }
-            
-            var equipmentMessage = new EquipmentMessage
+            else
             {
-                EquipmentID = equipmentId,
-                MessageType = "PRODUCTION_DATA",
-                MessageContent = $"Production data for batch {batchId}",
-                Timestamp = DateTime.Now,
-                Properties = new Dictionary<string, object>()
-                {
-                    ["ProductionData"] = productionData
-                }
-            };
-            
-            return await ProcessEquipmentMessageAsync(equipmentMessage);
+                var result = $"发送生产数据XML消息到主题 '{subject}' 失败";
+                log.Error(result);
+                return result;
+            }
         }
         
         /// <summary>
         /// 处理报警XML消息
+        /// 直接通过TIBCO发送XML消息到WCFServices
         /// </summary>
         private async Task<string> ProcessAlarmXmlMessage(XDocument doc)
         {
@@ -180,44 +189,58 @@ namespace Common.Services
             var alarmCode = doc.Root?.Element("AlarmCode")?.Value ?? "Unknown";
             var description = doc.Root?.Element("Description")?.Value ?? "";
             
-            var equipmentMessage = new EquipmentMessage
-            {
-                EquipmentID = equipmentId,
-                MessageType = "ALARM",
-                MessageContent = $"Alarm {alarmCode}: {description}",
-                Timestamp = DateTime.Now,
-                Properties = new Dictionary<string, object>()
-                {
-                    ["AlarmCode"] = alarmCode,
-                    ["Description"] = description
-                }
-            };
+            // 直接发送原始XML内容到WCFServices
+            var xmlContent = doc.ToString();
+            var subject = DetermineSubjectFromMessageType("ALARM", equipmentId);
             
-            return await ProcessEquipmentMessageAsync(equipmentMessage);
+            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
+            
+            if (sendResult)
+            {
+                var result = $"报警XML消息已发送到主题 '{subject}'";
+                log.Info(result);
+                return result;
+            }
+            else
+            {
+                var result = $"发送报警XML消息到主题 '{subject}' 失败";
+                log.Error(result);
+                return result;
+            }
         }
         
         /// <summary>
         /// 处理通用XML消息
+        /// 直接通过TIBCO发送XML消息到WCFServices
         /// </summary>
         private async Task<string> ProcessGenericXmlMessage(XDocument doc)
         {
             var rootName = doc.Root?.Name?.LocalName ?? "Unknown";
             var equipmentId = doc.Root?.Attribute("EquipmentId")?.Value ?? "Unknown";
             
-            var equipmentMessage = new EquipmentMessage
-            {
-                EquipmentID = equipmentId,
-                MessageType = rootName,
-                MessageContent = doc.ToString(),
-                Timestamp = DateTime.Now,
-                Properties = new Dictionary<string, object>()
-            };
+            // 直接发送原始XML内容到WCFServices
+            var xmlContent = doc.ToString();
+            var subject = DetermineSubjectFromMessageType(rootName, equipmentId);
             
-            return await ProcessEquipmentMessageAsync(equipmentMessage);
+            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
+            
+            if (sendResult)
+            {
+                var result = $"通用XML消息已发送到主题 '{subject}'";
+                log.Info(result);
+                return result;
+            }
+            else
+            {
+                var result = $"发送通用XML消息到主题 '{subject}' 失败";
+                log.Error(result);
+                return result;
+            }
         }
         
         /// <summary>
-        /// 发送设备状态到MES服务
+        /// 发送设备状态到WCFServices
+        /// 通过TIBCO发送状态消息
         /// </summary>
         public async Task<bool> SendEquipmentStatusAsync(string equipmentId, string status)
         {
@@ -225,7 +248,17 @@ namespace Common.Services
             {
                 log.Info($"发送设备状态: {equipmentId} = {status}");
                 
-                var result = await Task.Run(() => _mesService.SetEquipmentStatus(equipmentId, status));
+                // 创建包含设备状态的XML消息
+                var xmlContent = $@"
+                <EquipmentStatusUpdate>
+                    <EquipmentId>{equipmentId}</EquipmentId>
+                    <Status>{status}</Status>
+                    <Timestamp>{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
+                </EquipmentStatusUpdate>";
+                
+                var subject = $"EQUIPMENT.STATUS.{equipmentId}";
+                
+                var result = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
                 
                 log.Info($"设备状态发送结果: {result}");
                 return result;
@@ -239,6 +272,8 @@ namespace Common.Services
         
         /// <summary>
         /// 获取设备状态
+        /// 由于TIBCO是发布/订阅模式，这里返回一个默认状态或从缓存中获取
+        /// 实际实现中可能需要查询数据库或其他持久化存储
         /// </summary>
         public async Task<EquipmentStatus> GetEquipmentStatusAsync(string equipmentId)
         {
@@ -246,10 +281,17 @@ namespace Common.Services
             {
                 log.Info($"获取设备状态: {equipmentId}");
                 
-                var result = await Task.Run(() => _mesService.GetEquipmentStatus(equipmentId));
+                // 在TIBCO模式下，我们通常不能直接"请求"状态，只能订阅更新
+                // 这里返回一个默认状态，实际实现中应从缓存或数据库获取最新状态
+                var status = new EquipmentStatus
+                {
+                    EquipmentID = equipmentId,
+                    Status = "Unknown",
+                    LastUpdate = DateTime.Now
+                };
                 
-                log.Info($"获取设备状态结果: {result.Status}");
-                return result;
+                log.Info($"获取设备状态结果: {status.Status}");
+                return status;
             }
             catch (Exception ex)
             {
@@ -257,13 +299,14 @@ namespace Common.Services
                 return new EquipmentStatus
                 {
                     EquipmentID = equipmentId,
-                    Status = "Unknown"
+                    Status = "Error"
                 };
             }
         }
         
         /// <summary>
-        /// 发送报警信息
+        /// 发送报警信息到WCFServices
+        /// 通过TIBCO发送报警消息
         /// </summary>
         public async Task<bool> SendAlarmAsync(string equipmentId, string alarmCode, string description)
         {
@@ -271,7 +314,18 @@ namespace Common.Services
             {
                 log.Info($"发送报警: {equipmentId} - {alarmCode}: {description}");
                 
-                var result = await Task.Run(() => _mesService.SendAlarm(equipmentId, alarmCode, description));
+                // 创建包含报警信息的XML消息
+                var xmlContent = $@"
+                <AlarmMessage>
+                    <EquipmentId>{equipmentId}</EquipmentId>
+                    <AlarmCode>{alarmCode}</AlarmCode>
+                    <Description>{description}</Description>
+                    <Timestamp>{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
+                </AlarmMessage>";
+                
+                var subject = $"ALARM.{equipmentId}";
+                
+                var result = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
                 
                 log.Info($"报警发送结果: {result}");
                 return result;
@@ -290,12 +344,55 @@ namespace Common.Services
         {
             try
             {
-                (_mesService as IDisposable)?.Dispose();
-                _wcfChannelFactory?.Close();
+                // 释放TIBCO服务资源
+                _tibrvService?.Dispose();
             }
             catch (Exception ex)
             {
                 log.Error("释放TibrvService资源时出错", ex);
+            }
+        }
+        
+        /// <summary>
+        /// 将设备消息转换为XML格式
+        /// </summary>
+        private string ConvertEquipmentMessageToXml(EquipmentMessage message)
+        {
+            var xml = $@"
+            <EquipmentMessage>
+                <EquipmentId>{message.EquipmentID}</EquipmentId>
+                <MessageType>{message.MessageType}</MessageType>
+                <MessageContent>{message.MessageContent}</MessageContent>
+                <Timestamp>{message.Timestamp:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
+                <Properties>
+                    {string.Join("", message.Properties.Select(p => $"<{p.Key}>{p.Value}</{p.Key}>"))}
+                </Properties>
+            </EquipmentMessage>";
+            
+            return xml.Trim();
+        }
+        
+        /// <summary>
+        /// 根据消息类型确定TIBCO主题
+        /// </summary>
+        private string DetermineSubjectFromMessageType(string messageType, string equipmentId)
+        {
+            // 根据消息类型映射到不同的TIBCO主题
+            switch (messageType.ToUpper())
+            {
+                case "ALARM":
+                case "ALARM_MESSAGE":
+                    return $"ALARM.{equipmentId}";
+                case "PRODUCTION_DATA":
+                    return $"PRODUCTION.DATA.{equipmentId}";
+                case "STATUS_UPDATE":
+                    return $"EQUIPMENT.STATUS.{equipmentId}";
+                case "CONFIG_CHANGE":
+                    return $"CONFIG.CHANGE.{equipmentId}";
+                case "HEARTBEAT":
+                    return $"HEARTBEAT.{equipmentId}";
+                default:
+                    return $"MESSAGES.{messageType.ToUpper()}.{equipmentId}";
             }
         }
     }
