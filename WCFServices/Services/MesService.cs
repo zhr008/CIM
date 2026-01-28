@@ -4,10 +4,11 @@ using System.ServiceModel;
 using WCFServices.Contracts;
 using Common.Models;
 using log4net;
+using CoreWCF;
 
 namespace WCFServices.Services
 {
-    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = CoreWCF.ConcurrencyMode.Multiple)]
     public class MesService : IMesService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MesService));

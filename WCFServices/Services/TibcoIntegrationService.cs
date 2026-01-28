@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using WCFServices.Contracts;
 using Common.Models;
 using log4net;
+using CoreWCF;
 
 namespace WCFServices.Services
 {
@@ -13,7 +14,7 @@ namespace WCFServices.Services
     /// TIBCO集成服务 - 处理从CIMMonitor到WCF服务的数据流转
     /// 实现完整的数据流: CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
     /// </summary>
-    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)]
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = CoreWCF.ConcurrencyMode.Multiple)]
     public class TibcoIntegrationService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TibcoIntegrationService));
@@ -24,8 +25,8 @@ namespace WCFServices.Services
         public TibcoIntegrationService()
         {
             // 初始化WCF服务连接
-            var binding = new BasicHttpBinding();
-            var endpoint = new EndpointAddress("http://localhost:8080/MesService");
+            var binding = new CoreWCF.BasicHttpBinding();
+            var endpoint = new CoreWCF.EndpointAddress("http://localhost:8080/MesService");
             _wcfChannelFactory = new ChannelFactory<IMesService>(binding, endpoint);
             _mesService = _wcfChannelFactory.CreateChannel();
         }

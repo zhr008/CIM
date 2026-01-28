@@ -1,3 +1,4 @@
+using Common.Services;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using WCFServices.Models;

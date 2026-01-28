@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="CoreWCF.Http" Version="1.8.0" />
+    <PackageReference Include="Oracle.ManagedDataAccess" Version="23.26.100" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.Duplex" Version="4.10.0" />
