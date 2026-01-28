@@ -1,41 +1,55 @@
-```gitignore
+```
 # Build artifacts
+*.o
 *.obj
 *.exe
 *.dll
-*.pdb
-*.userprefs
-*.user
-*.suo
-*.cache
-*.tlog
-*.log
-*.tmp
+*.so
+*.a
+*.out
 
 # Dependencies
 packages/
-node_modules/
-.nuget/
-.nuget.packages/
+lib/
+bin/
+obj/
 
-# IDE specific
-.vs/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
 .vscode/
 .idea/
 *.userprefs
+*.userosscache
 *.user
 *.suo
-*.cache
+*.useroptions
 
-# OS specific
+# OS generated files
 .DS_Store
 Thumbs.db
-ehthumbs.db
+desktop.ini
 
-# Configuration
-*.userprefs
-*.user
+# Coverage reports
+coverage/
+htmlcov/
+*.coverage
 
-# Logs
-*.log
+# Debug files
+*.stackdump
+*.dmp
+
+# Output directories (common in .NET projects)
+Debug/
+Release/
+x64/
+x86/
 ```

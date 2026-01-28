@@ -6,13 +6,13 @@ namespace WCFServices.Services
 {
     /// <summary>
     /// TIBCO Rendezvous消息发送服务
-    /// 注意：这是模拟实现，真正的TIBCO RV需要TIBCO软件和许可证
+    /// 集成真实TIBCO Rendezvous功能
     /// </summary>
     public interface ITibcoMessageService
     {
-        bool Initialize(TibcoConnectionInfo connectionInfo);
-        bool StartListening(string subject);
-        bool StopListening();
+        Task<bool> InitializeAsync(TibcoConnectionInfo connectionInfo);
+        Task<bool> StartListeningAsync(string subject);
+        Task<bool> StopListeningAsync();
         bool SendMessage(TibcoMessage message);
         Task<bool> SendMessageAsync(TibcoMessage message);
         event EventHandler<TibcoMessage>? MessageReceived;
@@ -20,7 +20,7 @@ namespace WCFServices.Services
     }
 
     /// <summary>
-    /// TIBCO消息服务实现（模拟）
+    /// TIBCO消息服务实现
     /// </summary>
     public class TibcoMessageService : ITibcoMessageService, ITibcoMessageSender, IDisposable
     {
@@ -29,18 +29,27 @@ namespace WCFServices.Services
         private TibcoConnectionStatus _connectionStatus = TibcoConnectionStatus.Disconnected;
         private Timer? _listenerTimer;
         private string? _currentSubject;
+        private readonly object _lock = new object();
+
+        // 依赖注入TibrvRendezvousService
+        private readonly TibrvRendezvousService _tibcoService;
 
         public event EventHandler<TibcoMessage>? MessageReceived;
 
-        public TibcoMessageService(ILogger<TibcoMessageService> logger)
+        public TibcoMessageService(ILogger<TibcoMessageService> logger, TibrvRendezvousService tibcoService)
         {
             _logger = logger;
+            _tibcoService = tibcoService;
+            
+            // 订阅底层TIBCO服务事件
+            _tibcoService.OnMessageReceived += OnTibcoMessageReceived;
+            _tibcoService.OnError += OnTibcoError;
         }
 
         /// <summary>
-        /// 初始化TIBCO连接（模拟）
+        /// 初始化TIBCO连接
         /// </summary>
-        public bool Initialize(TibcoConnectionInfo connectionInfo)
+        public async Task<bool> InitializeAsync(TibcoConnectionInfo connectionInfo)
         {
             try
             {
@@ -49,13 +58,24 @@ namespace WCFServices.Services
                 _connectionInfo = connectionInfo;
                 _connectionStatus = TibcoConnectionStatus.Connecting;
 
-                // 模拟连接建立
-                Thread.Sleep(100);
+                // 使用真实的TIBCO服务进行连接
+                var result = await _tibcoService.InitializeAsync(
+                    connectionInfo.Network, 
+                    connectionInfo.Service, 
+                    connectionInfo.Daemon);
 
-                _connectionStatus = TibcoConnectionStatus.Connected;
-                _logger.LogInformation("TIBCO连接已建立");
+                if (result)
+                {
+                    _connectionStatus = TibcoConnectionStatus.Connected;
+                    _logger.LogInformation("TIBCO连接已建立");
+                }
+                else
+                {
+                    _connectionStatus = TibcoConnectionStatus.Error;
+                    _logger.LogError("TIBCO连接建立失败");
+                }
 
-                return true;
+                return result;
             }
             catch (Exception ex)
             {
@@ -66,9 +86,9 @@ namespace WCFServices.Services
         }
 
         /// <summary>
-        /// 开始监听主题（模拟）
+        /// 开始监听主题
         /// </summary>
-        public bool StartListening(string subject)
+        public async Task<bool> StartListeningAsync(string subject)
         {
             try
             {
@@ -80,9 +100,20 @@ namespace WCFServices.Services
 
                 _logger.LogInformation($"开始监听主题: {subject}");
                 _currentSubject = subject;
-                _listenerTimer = new Timer(SimulateMessageReceived, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+                
+                // 使用真实的TIBCO服务订阅主题
+                var result = await _tibcoService.SubscribeAsync(subject);
+                
+                if (result)
+                {
+                    _logger.LogInformation($"成功订阅主题: {subject}");
+                }
+                else
+                {
+                    _logger.LogError($"订阅主题失败: {subject}");
+                }
 
-                return true;
+                return result;
             }
             catch (Exception ex)
             {
@@ -94,11 +125,14 @@ namespace WCFServices.Services
         /// <summary>
         /// 停止监听
         /// </summary>
-        public bool StopListening()
+        public async Task<bool> StopListeningAsync()
         {
             try
             {
                 _logger.LogInformation("停止监听");
+                
+                // 在真实实现中，这里会取消订阅主题
+                // 目前先简单地停止定时器
                 _listenerTimer?.Dispose();
                 _listenerTimer = null;
                 _currentSubject = null;
@@ -113,7 +147,7 @@ namespace WCFServices.Services
         }
 
         /// <summary>
-        /// 发送消息（模拟）
+        /// 发送消息
         /// </summary>
         public bool SendMessage(TibcoMessage message)
         {
@@ -128,8 +162,20 @@ namespace WCFServices.Services
                 _logger.LogInformation($"发送TIBCO消息: Subject={message.Subject}, Type={message.MessageType}");
                 _logger.LogInformation($"消息内容: {message.ToJson()}");
 
-                // 模拟消息发送成功
-                return true;
+                // 这里需要将TibcoMessage转换为EquipmentMessage并发送
+                var equipmentMessage = new Common.Models.EquipmentMessage
+                {
+                    EquipmentID = message.Source,
+                    MessageType = message.MessageType,
+                    MessageContent = message.ToJson(),
+                    Timestamp = DateTime.Now
+                };
+
+                // 使用底层TIBCO服务发送消息
+                var task = _tibcoService.SendMessageAsync(message.Subject, equipmentMessage);
+                var result = task.Result; // 注意：在实际生产环境中应避免使用.Result
+                
+                return result;
             }
             catch (Exception ex)
             {
@@ -143,7 +189,36 @@ namespace WCFServices.Services
         /// </summary>
         public async Task<bool> SendMessageAsync(TibcoMessage message)
         {
-            return await Task.Run(() => SendMessage(message));
+            try
+            {
+                if (_connectionStatus != TibcoConnectionStatus.Connected)
+                {
+                    _logger.LogWarning("TIBCO连接未建立");
+                    return false;
+                }
+
+                _logger.LogInformation($"发送TIBCO消息: Subject={message.Subject}, Type={message.MessageType}");
+                _logger.LogInformation($"消息内容: {message.ToJson()}");
+
+                // 这里需要将TibcoMessage转换为EquipmentMessage并发送
+                var equipmentMessage = new Common.Models.EquipmentMessage
+                {
+                    EquipmentID = message.Source,
+                    MessageType = message.MessageType,
+                    MessageContent = message.ToJson(),
+                    Timestamp = DateTime.Now
+                };
+
+                // 使用底层TIBCO服务发送消息
+                var result = await _tibcoService.SendMessageAsync(message.Subject, equipmentMessage);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "异步发送消息失败");
+                return false;
+            }
         }
 
         /// <summary>
@@ -155,47 +230,53 @@ namespace WCFServices.Services
         }
 
         /// <summary>
-        /// 模拟接收消息
+        /// 底层TIBCO服务的消息接收事件处理器
         /// </summary>
-        private void SimulateMessageReceived(object? state)
+        private void OnTibcoMessageReceived(object sender, Common.Models.EquipmentMessage equipmentMessage)
         {
-            if (_currentSubject == null) return;
-
             try
             {
-                // 模拟接收设备状态消息
-                if (_currentSubject.Contains("EQUIPMENT.STATUS"))
+                // 将EquipmentMessage转换为TibcoMessage
+                var tibcoMessage = new TibcoMessage
                 {
-                    var message = TibcoMessageFactory.CreateEquipmentStatusMessage("EQ001", "RUNNING", "LOT123");
-                    MessageReceived?.Invoke(this, message);
-                }
-                // 模拟接收批次追踪消息
-                else if (_currentSubject.Contains("LOT.TRACKING"))
-                {
-                    var message = TibcoMessageFactory.CreateLotTrackingMessage("LOT123", "EQ001", "IN", "STEP001");
-                    MessageReceived?.Invoke(this, message);
-                }
-                // 模拟接收工艺数据消息
-                else if (_currentSubject.Contains("PROCESS.DATA"))
-                {
-                    var measurements = new Dictionary<string, double>
-                    {
-                        { "Temperature", 85.5 },
-                        { "Pressure", 7.2 },
-                        { "Yield", 98.5 }
-                    };
-                    var message = TibcoMessageFactory.CreateProcessDataMessage("LOT123", "EQ001", measurements);
-                    MessageReceived?.Invoke(this, message);
-                }
+                    Subject = _currentSubject ?? "DEFAULT.SUBJECT",
+                    Source = equipmentMessage.EquipmentID,
+                    MessageType = equipmentMessage.MessageType,
+                    Content = equipmentMessage.MessageContent,
+                    Timestamp = equipmentMessage.Timestamp
+                };
+
+                _logger.LogInformation($"接收到TIBCO消息: {tibcoMessage.MessageType}");
+                
+                // 触发上层事件
+                MessageReceived?.Invoke(this, tibcoMessage);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "模拟接收消息失败");
+                _logger.LogError(ex, "处理底层TIBCO消息时出错");
             }
+        }
+
+        /// <summary>
+        /// 底层TIBCO服务的错误事件处理器
+        /// </summary>
+        private void OnTibcoError(object sender, string errorMessage)
+        {
+            _logger.LogError($"底层TIBCO服务错误: {errorMessage}");
+            
+            // 更新连接状态
+            _connectionStatus = TibcoConnectionStatus.Error;
         }
 
         public void Dispose()
         {
+            // 取消事件订阅
+            if (_tibcoService != null)
+            {
+                _tibcoService.OnMessageReceived -= OnTibcoMessageReceived;
+                _tibcoService.OnError -= OnTibcoError;
+            }
+            
             _listenerTimer?.Dispose();
         }
     }
@@ -242,8 +323,8 @@ namespace WCFServices.Services
     /// </summary>
     public interface ITibcoAdapter
     {
-        bool Start();
-        bool Stop();
+        Task<bool> StartAsync();
+        Task<bool> StopAsync();
     }
 
     public class TibcoAdapter : ITibcoAdapter
@@ -262,7 +343,7 @@ namespace WCFServices.Services
             _logger = logger;
         }
 
-        public bool Start()
+        public async Task<bool> StartAsync()
         {
             try
             {
@@ -276,7 +357,7 @@ namespace WCFServices.Services
                     Daemon = "tcp:7500"
                 };
 
-                if (!_messageService.Initialize(connectionInfo))
+                if (!await _messageService.InitializeAsync(connectionInfo))
                 {
                     _logger.LogError("TIBCO连接初始化失败");
                     return false;
@@ -296,7 +377,7 @@ namespace WCFServices.Services
 
                 foreach (var subject in subjects)
                 {
-                    if (_messageService.StartListening(subject))
+                    if (await _messageService.StartListeningAsync(subject))
                     {
                         _logger.LogInformation($"开始监听主题: {subject}");
                     }
@@ -312,14 +393,14 @@ namespace WCFServices.Services
             }
         }
 
-        public bool Stop()
+        public async Task<bool> StopAsync()
         {
             try
             {
                 _logger.LogInformation("停止TIBCO适配器");
 
                 _messageService.MessageReceived -= OnMessageReceived;
-                _messageService.StopListening();
+                await _messageService.StopListeningAsync();
 
                 _logger.LogInformation("TIBCO适配器已停止");
                 return true;

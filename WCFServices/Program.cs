@@ -73,10 +73,32 @@ namespace WCFServices
             services.AddSingleton<IOracleDataAccess, OracleDataAccess>();
 
             // 配置TIBCO服务
-            services.AddSingleton<ITibcoMessageService, TibcoMessageService>();
-            services.AddSingleton<ITibcoMessageSender, TibcoMessageService>();
-            services.AddSingleton<ITibcoMessageListener, TibcoMessageListener>();
-            services.AddSingleton<ITibcoAdapter, TibcoAdapter>();
+            services.AddSingleton<TibrvRendezvousService>();
+            services.AddSingleton<ITibcoMessageService>(provider =>
+            {
+                var logger = provider.GetRequiredService<ILogger<TibcoMessageService>>();
+                var tibcoService = provider.GetRequiredService<TibrvRendezvousService>();
+                return new TibcoMessageService(logger, tibcoService);
+            });
+            services.AddSingleton<ITibcoMessageSender>(provider =>
+            {
+                var logger = provider.GetRequiredService<ILogger<TibcoMessageService>>();
+                var tibcoService = provider.GetRequiredService<TibrvRendezvousService>();
+                return new TibcoMessageService(logger, tibcoService);
+            });
+            services.AddSingleton<ITibcoMessageListener>(provider =>
+            {
+                var businessService = provider.GetRequiredService<IMesBusinessService>();
+                var logger = provider.GetRequiredService<ILogger<TibcoMessageListener>>();
+                return new TibcoMessageListener(businessService, logger);
+            });
+            services.AddSingleton<ITibcoAdapter>(provider =>
+            {
+                var messageService = provider.GetRequiredService<ITibcoMessageService>();
+                var businessService = provider.GetRequiredService<IMesBusinessService>();
+                var logger = provider.GetRequiredService<ILogger<TibcoAdapter>>();
+                return new TibcoAdapter(messageService, businessService, logger);
+            });
             
             // 添加TIBCO订阅者服务
             services.AddSingleton<TibcoSubscriberService>();

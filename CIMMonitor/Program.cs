@@ -60,10 +60,21 @@ public static class Program
     /// <summary>
     /// 初始化服务
     /// </summary>
-    private static void InitializeServices()
+    private static async Task InitializeServicesAsync()
     {
         try
         {
+            // 初始化TIBCO服务
+            var tibcoInitialized = await CIMMonitor.Services.TibcoService.Instance.InitializeAsync();
+            if (tibcoInitialized)
+            {
+                _logger.Info("TIBCO服务初始化成功");
+            }
+            else
+            {
+                _logger.Warn("TIBCO服务初始化失败，系统将继续运行但部分功能受限");
+            }
+
             // 初始化KepServer监控服务
             var kepServerService = new KepServerMonitoringService();
             var kepServerConfigPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.xml");
@@ -86,6 +97,14 @@ public static class Program
             _logger?.Error("初始化服务失败", ex);
             throw;
         }
+    }
+    
+    /// <summary>
+    /// 旧版同步初始化方法，为了兼容性保留
+    /// </summary>
+    private static void InitializeServices()
+    {
+        _ = InitializeServicesAsync().Result;
     }
 
     /// <summary>

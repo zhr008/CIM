@@ -54,7 +54,7 @@ namespace CIMMonitor.Forms
             cmbSubject.Location = new Point(80, 17);
             cmbSubject.Size = new Size(200, 25);
             cmbSubject.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbSubject.Items.AddRange(Services.TibcoService.GetSubjects().ToArray());
+            cmbSubject.Items.AddRange(CIMMonitor.Services.TibcoService.Instance.GetSubjects().ToArray());
             this.Controls.Add(cmbSubject);
 
             var lblContent = new Label();
@@ -79,7 +79,7 @@ namespace CIMMonitor.Forms
             btnRefresh.Text = "刷新消息";
             btnRefresh.Location = new Point(900, 15);
             btnRefresh.Size = new Size(100, 30);
-            btnRefresh.Click += (s, e) => LoadMessages();
+            btnRefresh.Click += async (s, e) => await LoadMessagesAsync();
             this.Controls.Add(btnRefresh);
 
             // 状态信息
@@ -91,9 +91,9 @@ namespace CIMMonitor.Forms
             this.Controls.Add(lblStatus);
         }
 
-        private void LoadMessages()
+        private async Task LoadMessagesAsync()
         {
-            var messages = Services.TibcoService.GetRecentMessages();
+            var messages = CIMMonitor.Services.TibcoService.Instance.GetRecentMessages();
             dgvMessages!.Rows.Clear();
 
             foreach (var msg in messages)
@@ -101,15 +101,30 @@ namespace CIMMonitor.Forms
                 dgvMessages.Rows.Add(msg.Subject, msg.Content, msg.SenderId, msg.Timestamp.ToString("HH:mm:ss"));
             }
         }
+        
+        private void LoadMessages()
+        {
+            LoadMessagesAsync().GetAwaiter().GetResult();
+        }
 
-        private void BtnSend_Click(object? sender, EventArgs e)
+        private async void BtnSend_Click(object? sender, EventArgs e)
         {
             if (cmbSubject!.SelectedItem != null && !string.IsNullOrEmpty(txtContent!.Text))
             {
-                Services.TibcoService.SendMessage(cmbSubject.SelectedItem.ToString(), txtContent.Text);
-                txtContent.Text = "";
-                LoadMessages();
-                MessageBox.Show("消息发送成功", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var result = await CIMMonitor.Services.TibcoService.Instance.SendMessageAsync(
+                    cmbSubject.SelectedItem.ToString(), 
+                    txtContent.Text);
+                
+                if (result)
+                {
+                    txtContent.Text = "";
+                    await LoadMessagesAsync();
+                    MessageBox.Show("消息发送成功", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("消息发送失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             else
             {
