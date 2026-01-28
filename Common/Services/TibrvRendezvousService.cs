@@ -1,14 +1,14 @@
-using Common.Models;
-using log4net;
-using System.Runtime.InteropServices;
-using TIBCO.Rendezvous;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Common.Services
 {
-    /// <summary>
-    /// TIBCO Rendezvous服务，用于与TIBCO Rendezvous消息系统集成
-    /// </summary>
-    public class TibrvRendezvousService : IDisposable
+    public class TibrvRendezvousService
     {
         #region 字段、属性
         private string _service;                //服务
@@ -41,304 +41,501 @@ namespace Common.Services
         public TIBCO.Rendezvous.Listener Listener { get => _listener; set => _listener = value; }
         public TIBCO.Rendezvous.Queue Queue { get => _queue; set => _queue = value; }
 
+        #endregion
 
-        private static readonly ILog log = LogManager.GetLogger(typeof(TibrvRendezvousService));
-        private bool isConnected;
-        private IntPtr _transportHandle = IntPtr.Zero;
-        private IntPtr _queueHandle = IntPtr.Zero;
-        private IntPtr _dispatcherHandle = IntPtr.Zero;
-        private Thread _listenerThread;
-        private bool _shouldStop;
-        
-        public event EventHandler<EquipmentMessage> OnMessageReceived;
-        public event EventHandler<string> OnError;
-        
-        private string _networkInterface;
-        private string _service;
-        private string _daemon;
-        
-        public TibrvRendezvousService()
+        #region 构造函数
+        public TibrvRendezvousService() { }
+        public TibrvRendezvousService(string server, string network, string daemon)
         {
-            isConnected = false;
+            this.Service = server;
+            this.Network = network;
+            this.Daemon = daemon;
         }
-        
+        public TibrvRendezvousService(string server, string network, string daemon, string listenSubject, string targetSubject)
+        {
+            this.Service = server;
+            this.Network = network;
+            this.Daemon = daemon;
+            this.ListenSubject = listenSubject;
+            this.TargetSubject = targetSubject;
+            this.ConnectedStatusHandler += OnConnectCallBack;
+        }
+        #endregion
+
+
+        #region 连接
         /// <summary>
-        /// 初始化TIBCO Rendezvous连接
+        /// 打开环境
         /// </summary>
-        public async Task<bool> InitializeAsync(string networkInterface, string service, string daemon)
+        public bool Open()
         {
             try
             {
-                log.Info($"正在初始化TIBCO Rendezvous: network={networkInterface}, service={service}, daemon={daemon}");
-                
-                _networkInterface = networkInterface;
-                _service = service;
-                _daemon = daemon;
-                
-                // 尝试加载TIBCO库并初始化连接
-                isConnected = await CreateTransportAsync();
-                
-                if (isConnected)
+                TIBCO.Rendezvous.Environment.Open();
+                IsOpen = true;
+                string msg = $"打开环境成功！";
+                ErrorMessageHandler.Invoke(this, msg);
+                return IsOpen;
+            }
+            catch (Exception ex)
+            {
+                IsOpen = false;
+                return IsOpen;
+            }
+        }
+        /// <summary>
+        /// 外部连接
+        /// </summary>
+        public void StartConnect()
+        {
+            Connected();
+        }
+        /// <summary>
+        /// 内部连接
+        /// </summary>
+        private bool Connected()
+        {
+            if (IsOpen)
+            {
+                TryCreateConnect();
+            }
+            else
+            {
+                Open();
+                TryCreateConnect();
+            }
+            return IsConnected;
+        }
+        /// <summary>
+        /// 尝试创建连接，超时时间3s
+        /// </summary>
+        private async void TryCreateConnect()
+        {
+            string msg = string.Empty;
+            try
+            {
+                Task createTask = Task.Run(() => CreateConnect());
+
+                Task timeoutTask = Task.Delay(3000);
+
+                Task completedTask = await Task.WhenAny(createTask, timeoutTask);
+                if (completedTask == timeoutTask)
                 {
-                    // 启动消息监听线程
-                    StartMessageListener();
-                    
-                    log.Info("TIBCO Rendezvous初始化成功");
-                    return true;
+                    msg = $"\r\n连接超时...\r\nDaemon = {Daemon}，Network =  {Network} ，Service = {Service}";
+                    ErrorMessageHandler.Invoke(this, msg);
+                    IsConnected = false;
+                    ConnectedStatusHandler.Invoke(this, false);
+                    return;
                 }
-                else
+                IsConnected = true;
+                ConnectedStatusHandler.Invoke(this, true);
+            }
+            catch (Exception ex)
+            {
+                msg = $"\r\n连接异常...\r\nDaemon = {Daemon}，Network =  {Network} ，Service = {Service}";
+                IsConnected = false;
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, false);
+            }
+        }
+        /// <summary>
+        /// 创建连接的方法
+        /// </summary>
+        private void CreateConnect()
+        {
+            string msg = string.Empty;
+            try
+            {
+                msg = $"正在连接...: Daemon = {Daemon}，Network = {Network}，Service = {Service}";
+                ErrorMessageHandler.Invoke(this, msg);
+                Transport = new NetTransport(Service, Network, Daemon);
+                IsConnected = true;
+                msg = $"连接成功...";
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, true);
+            }
+            catch (Exception ex)
+            {
+                IsConnected = false;
+                msg = $"连接失败...";
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, false);
+            }
+        }
+
+        /// <summary>
+        /// 断开连接
+        /// </summary>
+        public void DisConnected()
+        {
+            try
+            {
+                // 停止任务
+                if (task != null)
                 {
-                    log.Error("TIBCO Rendezvous初始化失败");
-                    return false;
+                    task = null;
+                }
+                
+                // 移除消息接收事件处理器
+                if (this.Listener != null)
+                {
+                    this.Listener.MessageReceived -= OnMessageReceivedCallBack;
+                }
+                
+                // 销毁监听器
+                if (Listener != null) 
+                {
+                    Listener.Destroy();
+                    Listener = null;
+                }
+                
+                // 销毁传输对象
+                if (Transport != null) 
+                {
+                    Transport.Destroy();
+                    Transport = null;
+                }
+                
+                // 清理队列
+                if (Queue != null)
+                {
+                    Queue = null;
+                }
+                
+                string msg = $"断开连接... : Daemon = {Daemon} ，Network = {Network}，Service = {Service}";
+                
+                // 关闭TIBCO环境
+                try
+                {
+                    TIBCO.Rendezvous.Environment.Close();
+                }
+                catch
+                {
+                    // 如果环境已经关闭，则忽略异常
+                }
+
+                IsListened = false;
+                IsConnected = false;
+                IsOpen = false;
+                
+                ErrorMessageHandler?.Invoke(this, msg);
+                ConnectedStatusHandler?.Invoke(this, false);
+                ListenedStatusHandler?.Invoke(this, false);
+                
+            }
+            catch (Exception ex)
+            {
+                string msg = $"断开连接时发生异常: {ex.Message}";
+                ErrorMessageHandler?.Invoke(this, msg);
+            }
+        }
+
+        /// <summary>
+        /// 获取本地所有IPv4地址
+        /// </summary>
+        /// <returns>返回包含本地IPv4地址的数组</returns>
+        public static IPAddress[] GetLocalIPAddresses()
+        {
+            // 获取本地主机名
+            string hostName = Dns.GetHostName();
+
+            // 获取主机的IP地址列表
+            IPAddress[] addresses = Dns.GetHostEntry(hostName).AddressList;
+
+            // 过滤出IPv4地址并返回
+            return addresses
+                .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork) // 只保留IPv4地址
+                .ToArray(); // 转换为数组
+        }
+        #endregion
+
+        #region 侦听
+        /// <summary>
+        /// 尝试侦听
+        /// </summary>
+        private void TryCreateListen()
+        {
+            try
+            {
+                if (IsConnected && !IsListened)
+                {
+                    if (Transport == null)
+                    {
+                        string msg = $"transport 为空，未连接，请先连接！！！";
+                        ErrorMessageHandler.Invoke(this, msg);
+                        ListenedStatusHandler.Invoke(this, false);
+                        IsListened = false;
+                        return;
+                    }
+                    Queue = new TIBCO.Rendezvous.Queue();
+                    Listener = new Listener(Queue, Transport, ListenSubject, null);
+                    this.Listener.MessageReceived += OnMessageReceivedCallBack;
+                    IsListened = true;
+                    ListenedStatusHandler.Invoke(this, true);
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"初始化TIBCO Rendezvous时发生错误: {ex.Message}", ex);
-                OnError?.Invoke(this, ex.Message);
-                return false;
+                IsListened = false;
+                string msg = $"侦听异常:{ex.Message}";
+                ErrorMessageHandler.Invoke(this, msg);
+                ListenedStatusHandler.Invoke(this, false);
             }
         }
-
         /// <summary>
-        /// 创建传输连接
+        /// 内部侦听
         /// </summary>
-        private async Task<bool> CreateTransportAsync()
+        private void Listen()
         {
-            // 这里是模拟实现，实际应用中需要调用TIBCO的API
-            // 使用Task.Run来模拟可能的阻塞操作
-            return await Task.Run(() =>
+            try
             {
-                try
+                string msg = $"开始侦听...";
+                ErrorMessageHandler.Invoke(this, msg);
+                if (!this.IsListened)
                 {
-                    // 在实际实现中，这里会调用TIBCO API如：
-                    // TIBCO.RV API calls to create transport
-                    Tibrv.Open();
-                    TibrvTransport transport = new TibrvTransport();
-                    transport.Create(service, network, daemon);
-
-                    // 模拟连接创建成功
-                    _transportHandle = new IntPtr(1); // 模拟句柄
-                    _queueHandle = new IntPtr(2);     // 模拟句柄
-                    
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"创建TIBCO传输连接失败: {ex.Message}", ex);
-                    return false;
-                }
-            });
-        }
-        
-        /// <summary>
-        /// 启动消息监听线程
-        /// </summary>
-        private void StartMessageListener()
-        {
-            _shouldStop = false;
-            _listenerThread = new Thread(ListenerLoop)
-            {
-                IsBackground = true,
-                Name = "TIBCO-Message-Listener"
-            };
-            _listenerThread.Start();
-        }
-        
-        /// <summary>
-        /// 监听循环
-        /// </summary>
-        private void ListenerLoop()
-        {
-            log.Info("TIBCO消息监听器启动");
-            
-            while (!_shouldStop && isConnected)
-            {
-                try
-                {
-                    // 在实际实现中，这里会等待TIBCO消息
-                    // 模拟等待消息
-                    Thread.Sleep(1000);
-                    
-                    // 定期检查连接状态
-                    if (!_shouldStop && isConnected)
+                    TryCreateListen();
+                    if (this.IsListened)
                     {
-                        // 可以在这里添加心跳检测逻辑
-                        log.Debug("TIBCO监听器运行中...");
+                        task = new Task(() =>
+                        {
+                            while (this.IsListened)
+                            {
+                                Queue.Dispatch();
+                            }
+                        });
+                        task.Start();
+                        msg = $"侦听成功！！！";
+                        ErrorMessageHandler.Invoke(this, msg);
                     }
                 }
-                catch (Exception ex)
-                {
-                    log.Error($"TIBCO监听循环中发生错误: {ex.Message}", ex);
-                    OnError?.Invoke(this, ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                this.IsListened = false;
+                string msg = $"侦听异常:{ex.Message}";
+                ErrorMessageHandler.Invoke(this, msg);
+            }
+        }
+        #endregion
+
+        #region 发送
+        public void Send(string data)
+        {
+            if (Transport == null || !IsConnected)
+            {
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
             }
             
-            log.Info("TIBCO消息监听器停止");
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            message.SendSubject = TargetSubject;
+            message.AddField(MessageField, data);
+            Transport.Send(message);
+        }
+        
+        public void Send(string field, string data)
+        {
+            if (Transport == null || !IsConnected)
+            {
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
+            }
+            
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            message.SendSubject = TargetSubject;
+            message.AddField(field, data);
+            Transport.Send(message);
+        }
+        
+        /// <summary>
+        /// 异步发送XML消息
+        /// </summary>
+        /// <param name="subject">消息主题</param>
+        /// <param name="xmlContent">XML内容</param>
+        /// <returns>发送结果</returns>
+        public async Task<bool> SendXmlMessageAsync(string subject, string xmlContent)
+        {
+            try
+            {
+                if (Transport == null || !IsConnected)
+                {
+                    string msg = "TIBCO transport is not initialized or not connected.";
+                    ErrorMessageHandler?.Invoke(this, msg);
+                    return false;
+                }
+                
+                await Task.Run(() =>
+                {
+                    TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+                    message.SendSubject = subject;
+                    message.AddField("XMLContent", xmlContent);  // 使用标准字段名
+                    Transport.Send(message);
+                });
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string msg = $"发送XML消息失败: {ex.Message}";
+                ErrorMessageHandler?.Invoke(this, msg);
+                return false;
+            }
         }
         
         /// <summary>
         /// 发送设备消息
         /// </summary>
-        public async Task<bool> SendMessageAsync(string subject, EquipmentMessage message)
+        /// <param name="equipmentId">设备ID</param>
+        /// <param name="messageType">消息类型</param>
+        /// <param name="data">消息数据</param>
+        public void SendEquipmentMessage(string equipmentId, string messageType, string data)
         {
-            if (!isConnected)
+            if (Transport == null || !IsConnected)
             {
-                log.Warn("无法发送消息: TIBCO未连接");
-                return false;
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
             }
             
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            string subject = $"EQUIPMENT.{messageType}.{equipmentId}";
+            message.SendSubject = subject;
+            message.AddField("Data", data);
+            message.AddField("EquipmentId", equipmentId);
+            message.AddField("MessageType", messageType);
+            message.AddField("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+            
+            Transport.Send(message);
+        }
+
+        /// <summary>
+        /// 发送请求消息并等待响应
+        /// </summary>
+        /// <param name="requestSubject">请求主题</param>
+        /// <param name="replySubject">回复主题</param>
+        /// <param name="data">请求数据</param>
+        /// <param name="timeoutMs">超时时间（毫秒）</param>
+        /// <returns>响应数据</returns>
+        public async Task<string> SendRequestAndWaitResponse(string requestSubject, string replySubject, string data, int timeoutMs = 5000)
+        {
+            if (Transport == null || !IsConnected)
+            {
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
+            }
+
+            var tcs = new TaskCompletionSource<string>();
+            TIBCO.Rendezvous.Listener tempListener = null;
+            Timer timeoutTimer = null;
+
             try
             {
-                log.Info($"向TIBCO主题'{subject}'发送消息: {message.MessageType}");
-                
-                // 在实际实现中，这里会使用TIBCO API发送消息
-                // 模拟发送过程
-                await Task.Run(() =>
+                // 创建临时监听器来接收响应
+                var queue = new TIBCO.Rendezvous.Queue();
+                tempListener = new Listener(queue, Transport, replySubject, null);
+
+                void OnTempMessageReceived(object sender, TIBCO.Rendezvous.MessageReceivedEventArgs e)
                 {
-                    // 模拟TIBCO消息发送
-                    // TibrvMsg msg = new TibrvMsg();
-                    // msg.SetSendSubject(subject);
-                    // msg.Add("EquipmentID", message.EquipmentID);
-                    // msg.Add("MessageType", message.MessageType);
-                    // msg.Add("MessageContent", message.MessageContent);
-                    // msg.Add("Timestamp", message.Timestamp.ToString("o"));
-                    // transport.Send(msg);
-                });
-                
-                log.Info($"消息发送成功: {subject}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"发送TIBCO消息失败: {ex.Message}", ex);
-                OnError?.Invoke(this, ex.Message);
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// 发送XML消息
-        /// </summary>
-        public async Task<bool> SendXmlMessageAsync(string subject, string xmlContent)
-        {
-            if (!isConnected)
-            {
-                log.Warn("无法发送XML消息: TIBCO未连接");
-                return false;
-            }
-            
-            try
-            {
-                log.Info($"向TIBCO主题'{subject}'发送XML消息，长度: {xmlContent.Length} 字符");
-                
-                // 在实际实现中，这里会使用TIBCO API发送XML消息
-                await Task.Run(() =>
-                {
-                    // 模拟发送XML消息
-                    // TibrvMsg msg = new TibrvMsg();
-                    // msg.SetSendSubject(subject);
-                    // msg.Add("XmlContent", xmlContent);
-                    // transport.Send(msg);
-                });
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"发送XML消息到TIBCO失败: {ex.Message}", ex);
-                OnError?.Invoke(this, ex.Message);
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// 订阅主题
-        /// </summary>
-        public async Task<bool> SubscribeAsync(string subject)
-        {
-            if (!isConnected)
-            {
-                log.Warn($"无法订阅主题'{subject}': TIBCO未连接");
-                return false;
-            }
-            
-            try
-            {
-                log.Info($"订阅TIBCO主题: {subject}");
-                
-                // 在实际实现中，这里会设置TIBCO监听器
-                await Task.Run(() =>
-                {
-                    // 模拟订阅过程
-                    // TibrvListener listener = new TibrvListener(callback, transport, subject, queue, closure);
-                });
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"订阅TIBCO主题'{subject}'失败: {ex.Message}", ex);
-                OnError?.Invoke(this, ex.Message);
-                return false;
-            }
-        }
-        
-        /// <summary>
-        /// 断开连接
-        /// </summary>
-        public void Disconnect()
-        {
-            log.Info("断开TIBCO Rendezvous连接");
-            
-            isConnected = false;
-            _shouldStop = true;
-            
-            if (_listenerThread != null && _listenerThread.IsAlive)
-            {
-                try
-                {
-                    _listenerThread.Join(2000); // 最多等待2秒
+                    // 移除事件处理器
+                    tempListener.MessageReceived -= OnTempMessageReceived;
+                    
+                    // 解析消息内容
+                    string response = ParseMessageContent(e.Message);
+                    tcs.SetResult(response);
                 }
-                catch (Exception ex)
-                {
-                    log.Error($"等待监听线程结束时出错: {ex.Message}", ex);
-                }
-            }
-            
-            // 清理资源
-            CleanupResources();
-            
-            log.Info("TIBCO Rendezvous已断开");
-        }
-        
-        /// <summary>
-        /// 清理资源
-        /// </summary>
-        private void CleanupResources()
-        {
-            try
-            {
-                // 在实际实现中，这里会清理TIBCO资源
-                // transport.Destroy();
-                // dispatcher.Destroy();
-                // queue.Destroy();
-                // Tibrv.Close();
-                
-                _transportHandle = IntPtr.Zero;
-                _queueHandle = IntPtr.Zero;
-                _dispatcherHandle = IntPtr.Zero;
+
+                tempListener.MessageReceived += OnTempMessageReceived;
+
+                // 设置超时定时器
+                timeoutTimer = new Timer(_ => {
+                    if (!tcs.Task.IsCompleted)
+                    {
+                        tcs.SetException(new TimeoutException($"Request timed out after {timeoutMs}ms"));
+                    }
+                }, null, timeoutMs, Timeout.Infinite);
+
+                // 发送请求
+                TIBCO.Rendezvous.Message requestMessage = new TIBCO.Rendezvous.Message();
+                requestMessage.SendSubject = requestSubject;
+                requestMessage.AddField("ReplySubject", replySubject); // 让接收方知道回复到哪里
+                requestMessage.AddField("RequestId", Guid.NewGuid().ToString()); // 唯一请求标识
+                requestMessage.AddField("Data", data);
+                requestMessage.AddField("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+
+                Transport.Send(requestMessage);
+
+                // 等待响应
+                string result = await tcs.Task;
+
+                // 清理资源
+                timeoutTimer?.Dispose();
+                tempListener?.Destroy();
+
+                return result;
             }
             catch (Exception ex)
             {
-                log.Error($"清理TIBCO资源时出错: {ex.Message}", ex);
+                timeoutTimer?.Dispose();
+                tempListener?.Destroy();
+                
+                if (ex is TimeoutException)
+                {
+                    throw; // 重新抛出超时异常
+                }
+                
+                string msg = $"发送请求并等待响应时发生错误: {ex.Message}";
+                ErrorMessageHandler?.Invoke(this, msg);
+                throw;
             }
         }
-        
-        public bool IsConnected => isConnected;
-        
+
+        /// <summary>
+        /// 解析消息内容
+        /// </summary>
+        /// <param name="message">TIBCO消息</param>
+        /// <returns>解析后的字符串内容</returns>
+        public string ParseMessageContent(TIBCO.Rendezvous.Message message)
+        {
+            StringBuilder sb = new StringBuilder();
+            
+            // 遍历消息中的所有字段
+            foreach (TIBCO.Rendezvous.Field field in message.Fields)
+            {
+                sb.AppendLine($"{field.Name}: {field.Value}");
+            }
+            
+            return sb.ToString();
+        }
+        #endregion
+
+        public void OnListenCallBack(object sender, bool listenStatu)
+        {
+            IsListened = listenStatu;
+        }
+        public void OnConnectCallBack(object sender, bool connectStatu)
+        {
+            IsConnected = connectStatu;
+            if (IsConnected)
+            {
+                Listen();
+            }
+        }
+
+        /// <summary>
+        /// 消息接收
+        /// </summary>
+        public void OnMessageReceivedCallBack(object sender, TIBCO.Rendezvous.MessageReceivedEventArgs messageReceivedEventArgs)
+        {
+            messageReceivedHandler?.Invoke(sender, messageReceivedEventArgs);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="messageReceivedEventArgs"></param>
+        public delegate void MessageReceivedHandler(object sender, TIBCO.Rendezvous.MessageReceivedEventArgs messageReceivedEventArgs);
+        public MessageReceivedHandler messageReceivedHandler;
+        public event EventHandler<string> ErrorMessageHandler;
+        public event EventHandler<bool> ConnectedStatusHandler;
+        public event EventHandler<bool> ListenedStatusHandler;
+
         #region IDisposable Support
-        private bool disposedValue = false;
+        private bool disposedValue = false; // 要检测冗余调用
 
         protected virtual void Dispose(bool disposing)
         {
@@ -346,16 +543,20 @@ namespace Common.Services
             {
                 if (disposing)
                 {
-                    Disconnect();
+                    // 释放托管状态(托管对象)
+                    DisConnected();
                 }
-                
+
+                // 释放未托管的资源(未托管的对象)并重写终结器
+                // 将大型字段设置为 null
                 disposedValue = true;
             }
         }
 
         public void Dispose()
         {
-            Dispose(true);
+            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
         #endregion
