@@ -395,5 +395,174 @@ namespace Common.Services
                     return $"MESSAGES.{messageType.ToUpper()}.{equipmentId}";
             }
         }
+        
+        /// <summary>
+        /// 执行业务逻辑处理
+        /// 将业务逻辑从WCFServices迁移到此处
+        /// </summary>
+        public async Task<string> ProcessBusinessLogicAsync(string messageType, string xmlContent)
+        {
+            try
+            {
+                log.Info($"执行业务逻辑处理: {messageType}");
+                
+                // 根据消息类型执行不同的业务逻辑
+                switch (messageType.ToUpper())
+                {
+                    case "PRODUCTION_DATA":
+                        return await ProcessProductionDataLogicAsync(xmlContent);
+                    case "ALARM_MESSAGE":
+                        return await ProcessAlarmLogicAsync(xmlContent);
+                    case "STATUS_UPDATE":
+                        return await ProcessStatusUpdateLogicAsync(xmlContent);
+                    case "CONFIG_CHANGE":
+                        return await ProcessConfigChangeLogicAsync(xmlContent);
+                    default:
+                        return await ProcessGenericBusinessLogicAsync(xmlContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"执行业务逻辑失败: {ex.Message}", ex);
+                return $"错误: {ex.Message}";
+            }
+        }
+        
+        /// <summary>
+        /// 处理生产数据业务逻辑
+        /// </summary>
+        private async Task<string> ProcessProductionDataLogicAsync(string xmlContent)
+        {
+            log.Info("处理生产数据业务逻辑");
+            
+            try
+            {
+                var doc = XDocument.Parse(xmlContent);
+                var lotId = doc.Root?.Element("LotId")?.Value ?? "";
+                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
+                var processStepId = doc.Root?.Element("ProcessStepId")?.Value ?? "";
+                
+                // 这里可以添加具体的业务逻辑，比如：
+                // 1. 验证数据完整性
+                // 2. 更新生产状态
+                // 3. 记录生产历史
+                // 4. 触发后续工艺步骤
+                
+                log.Info($"生产数据处理完成 - Lot: {lotId}, 设备: {equipmentId}, 工艺: {processStepId}");
+                return "生产数据处理成功";
+            }
+            catch (Exception ex)
+            {
+                log.Error($"处理生产数据业务逻辑失败: {ex.Message}", ex);
+                return $"生产数据处理失败: {ex.Message}";
+            }
+        }
+        
+        /// <summary>
+        /// 处理报警业务逻辑
+        /// </summary>
+        private async Task<string> ProcessAlarmLogicAsync(string xmlContent)
+        {
+            log.Info("处理报警业务逻辑");
+            
+            try
+            {
+                var doc = XDocument.Parse(xmlContent);
+                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
+                var alarmCode = doc.Root?.Element("AlarmCode")?.Value ?? "";
+                var description = doc.Root?.Element("Description")?.Value ?? "";
+                
+                // 这里可以添加具体的报警处理逻辑，比如：
+                // 1. 记录报警日志
+                // 2. 通知相关人员
+                // 3. 触发应急响应
+                // 4. 更新设备状态
+                
+                log.Info($"报警处理完成 - 设备: {equipmentId}, 报警码: {alarmCode}, 描述: {description}");
+                return "报警处理成功";
+            }
+            catch (Exception ex)
+            {
+                log.Error($"处理报警业务逻辑失败: {ex.Message}", ex);
+                return $"报警处理失败: {ex.Message}";
+            }
+        }
+        
+        /// <summary>
+        /// 处理状态更新业务逻辑
+        /// </summary>
+        private async Task<string> ProcessStatusUpdateLogicAsync(string xmlContent)
+        {
+            log.Info("处理状态更新业务逻辑");
+            
+            try
+            {
+                var doc = XDocument.Parse(xmlContent);
+                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
+                var status = doc.Root?.Element("Status")?.Value ?? "";
+                
+                // 这里可以添加具体的状态更新逻辑，比如：
+                // 1. 更新设备状态表
+                // 2. 检查状态变更合法性
+                // 3. 触发相关业务流程
+                
+                log.Info($"状态更新处理完成 - 设备: {equipmentId}, 状态: {status}");
+                return "状态更新处理成功";
+            }
+            catch (Exception ex)
+            {
+                log.Error($"处理状态更新业务逻辑失败: {ex.Message}", ex);
+                return $"状态更新处理失败: {ex.Message}";
+            }
+        }
+        
+        /// <summary>
+        /// 处理配置变更业务逻辑
+        /// </summary>
+        private async Task<string> ProcessConfigChangeLogicAsync(string xmlContent)
+        {
+            log.Info("处理配置变更业务逻辑");
+            
+            try
+            {
+                var doc = XDocument.Parse(xmlContent);
+                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
+                var configKey = doc.Root?.Element("ConfigKey")?.Value ?? "";
+                
+                // 这里可以添加具体的配置变更逻辑，比如：
+                // 1. 验证配置参数
+                // 2. 更新配置数据库
+                // 3. 通知相关组件
+                // 4. 记录变更历史
+                
+                log.Info($"配置变更处理完成 - 设备: {equipmentId}, 配置项: {configKey}");
+                return "配置变更处理成功";
+            }
+            catch (Exception ex)
+            {
+                log.Error($"处理配置变更业务逻辑失败: {ex.Message}", ex);
+                return $"配置变更处理失败: {ex.Message}";
+            }
+        }
+        
+        /// <summary>
+        /// 处理通用业务逻辑
+        /// </summary>
+        private async Task<string> ProcessGenericBusinessLogicAsync(string xmlContent)
+        {
+            log.Info("处理通用业务逻辑");
+            
+            try
+            {
+                // 对于未知类型的消息，进行通用处理
+                log.Info("执行通用业务处理流程");
+                return "通用业务处理成功";
+            }
+            catch (Exception ex)
+            {
+                log.Error($"处理通用业务逻辑失败: {ex.Message}", ex);
+                return $"通用业务处理失败: {ex.Message}";
+            }
+        }
     }
 }

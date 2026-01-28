@@ -14,6 +14,7 @@ namespace CIMMonitor.Services
         private static readonly object _lock = new object();
         
         private readonly TibrvRendezvousService _tibcoService;
+        private readonly TibrvService _businessService;  // 新增业务逻辑服务
         private readonly List<TibcoMessage> _messages = new();
         private readonly Random _random = new();
         
@@ -31,6 +32,7 @@ namespace CIMMonitor.Services
         private TibcoService()
         {
             _tibcoService = new TibrvRendezvousService();
+            _businessService = new TibrvService();  // 初始化业务逻辑服务
             _tibcoService.OnMessageReceived += OnTibcoMessageReceived;
             _tibcoService.OnError += OnTibcoError;
         }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.ServiceModel;
 using Common.Models;
 using CIMMonitor.Models.KepServer;
 using HsmsSimulator.Models;
@@ -23,8 +22,6 @@ namespace CIMMonitor.Services
         private readonly IKepServerMonitoringService _kepServerService;
         private readonly KepServerEventHandler _kepServerEventHandler;
         private readonly HsmsDeviceManager _hsmsDeviceManager;
-        private readonly ChannelFactory<IMesService> _wcfChannelFactory;
-        private readonly IMesService _mesService;
         
         public DataFlowService(
             IKepServerMonitoringService kepServerService, 
@@ -34,12 +31,6 @@ namespace CIMMonitor.Services
             _kepServerService = kepServerService;
             _kepServerEventHandler = kepServerEventHandler;
             _hsmsDeviceManager = hsmsDeviceManager;
-            
-            // 初始化WCF服务连接
-            var binding = new BasicHttpBinding();
-            var endpoint = new EndpointAddress("http://localhost:8080/MesService");
-            _wcfChannelFactory = new ChannelFactory<IMesService>(binding, endpoint);
-            _mesService = _wcfChannelFactory.CreateChannel();
             
             // 订阅事件
             _kepServerService.DataChanged += OnKepServerDataChanged;
@@ -228,7 +219,7 @@ namespace CIMMonitor.Services
                 var topic = DetermineTibcoTopic(equipmentMessage.MessageType);
                 
                 // 通过TibcoService发送消息
-                var success = TibcoService.SendMessage(topic, xmlContent, "CIMMonitor");
+                var success = await TibcoService.Instance.SendMessageAsync(topic, xmlContent, "CIMMonitor");
                 
                 if (success)
                 {
@@ -337,12 +328,6 @@ namespace CIMMonitor.Services
             // 断开HSMS设备连接
             await _hsmsDeviceManager.DisconnectAllAsync();
             
-            // 关闭WCF连接
-            if (_wcfChannelFactory != null && _wcfChannelFactory.State == CommunicationState.Opened)
-            {
-                _wcfChannelFactory.Close();
-            }
-            
             _logger.Info("数据流向服务已停止");
         }
 
@@ -378,9 +363,6 @@ namespace CIMMonitor.Services
                 _kepServerService.DataChanged -= OnKepServerDataChanged;
                 _kepServerService.MappingTriggered -= OnKepServerMappingTriggered;
                 _hsmsDeviceManager.DeviceMessageReceived -= OnHsmsMessageReceived;
-                
-                (_mesService as IDisposable)?.Dispose();
-                _wcfChannelFactory?.Close();
             }
             catch (Exception ex)
             {
