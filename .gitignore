@@ -5,14 +5,13 @@ obj/
 *.dll
 *.exe
 *.pdb
-*.so
-*.dylib
-*.nupkg
+*.config
+*.manifest
 
 # Dependencies
 packages/
 node_modules/
-.nuget/
+vendor/
 
 # Logs
 *.log
@@ -25,21 +24,23 @@ node_modules/
 # Editor/IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+*.userprefs
+*.userosscache
+*.suo
+*.user
+*.aps
+*.ncb
+*.opendb
+*.opensdf
 
 # OS generated files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Icon?
+desktop.ini
 
-# Test and coverage
+# Testing
+TestResults/
 coverage/
-htmlcov/
-.coverage
-*.coveragerc
-
-# Temporary files
-*.tmp
-*.temp
 ```
