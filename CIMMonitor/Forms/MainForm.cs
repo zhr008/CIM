@@ -20,7 +20,6 @@ namespace CIMMonitor.Forms
         private HardwareMonitorForm? hardwareMonitorForm;
         private ProductionDataForm? productionDataForm;
         private AlarmManagerForm? alarmManagerForm;
-        private TibcoMessageForm? tibcoMessageForm;
         
         // 新增数据流向服务
         private DataFlowService? _dataFlowService;
@@ -150,10 +149,6 @@ namespace CIMMonitor.Forms
             {
                 LoadAlarmManager();
             }
-            else if (mainTabControl.SelectedTab == tabPageTibco && tibcoMessageForm == null)
-            {
-                LoadTibcoMessage();
-            }
         }
 
         // 延迟加载各个功能模块
@@ -221,19 +216,6 @@ namespace CIMMonitor.Forms
             tabPageAlarm.Controls.Add(alarmManagerForm);
             alarmManagerForm.Show();
         }
-
-        private void LoadTibcoMessage()
-        {
-            if (tibcoMessageForm != null) return;
-
-            tibcoMessageForm = new TibcoMessageForm();
-            tibcoMessageForm.TopLevel = false;
-            tibcoMessageForm.FormBorderStyle = FormBorderStyle.None;
-            tibcoMessageForm.Dock = DockStyle.Fill;
-
-            tabPageTibco.Controls.Add(tibcoMessageForm);
-            tibcoMessageForm.Show();
-        }
         
         /// <summary>
         /// 初始化数据流向服务
@@ -246,10 +228,11 @@ namespace CIMMonitor.Forms
                 var kepServerService = Program.GetService<IKepServerMonitoringService>();
                 var kepServerEventHandler = Program.GetService<KepServerEventHandler>();
                 var hsmsDeviceManager = Program.GetService<HsmsDeviceManager>();
+                var tibrvService = Program.GetService<TibrvService>(); // 新增获取TibrvService实例
                 
-                if (kepServerService != null && kepServerEventHandler != null && hsmsDeviceManager != null)
+                if (kepServerService != null && kepServerEventHandler != null && hsmsDeviceManager != null && tibrvService != null)
                 {
-                    _dataFlowService = new DataFlowService(kepServerService, kepServerEventHandler, hsmsDeviceManager);
+                    _dataFlowService = new DataFlowService(kepServerService, kepServerEventHandler, hsmsDeviceManager, tibrvService);
                     
                     // 启动数据流向服务
                     _ = Task.Run(async () =>
@@ -340,12 +323,6 @@ namespace CIMMonitor.Forms
             mainTabControl.SelectedTab = tabPageAlarm;
         }
 
-        private void ShowTibcoMessage()
-        {
-            LoadTibcoMessage();
-            mainTabControl.SelectedTab = tabPageTibco;
-        }
-
         private void ShowConfig()
         {
             var form = new ConfigForm();
@@ -395,7 +372,7 @@ namespace CIMMonitor.Forms
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             // 停止数据流向服务
-            StopDataFlowService().Wait(5000); // 等待最多5秒
+            StopDataFlowService(); // 等待最多5秒
 
             base.OnFormClosing(e);
         }
@@ -427,14 +404,6 @@ namespace CIMMonitor.Forms
             monitorMenu.DropDownItems.Add(productionItem);
             monitorMenu.DropDownItems.Add(alarmItem);
             menuStrip.Items.Add(monitorMenu);
-
-            // 数据菜单
-            var dataMenu = new ToolStripMenuItem("数据(&D)");
-            var productionOrderItem = new ToolStripMenuItem("生产订单(&O)", null, (s, e) => ShowProductionOrder());
-            var tibcoItem = new ToolStripMenuItem("TIBCO消息(&T)", null, (s, e) => ShowTibcoMessage());
-            dataMenu.DropDownItems.Add(productionOrderItem);
-            dataMenu.DropDownItems.Add(tibcoItem);
-            menuStrip.Items.Add(dataMenu);
 
             // 系统管理菜单
             var adminMenu = new ToolStripMenuItem("系统管理(&A)");

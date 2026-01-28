@@ -6,6 +6,7 @@ using Common.Models;
 using CIMMonitor.Models.KepServer;
 using HsmsSimulator.Models;
 using log4net;
+using Common.Services;
 
 namespace CIMMonitor.Services
 {
@@ -22,16 +23,19 @@ namespace CIMMonitor.Services
         private readonly IKepServerMonitoringService _kepServerService;
         private readonly KepServerEventHandler _kepServerEventHandler;
         private readonly HsmsDeviceManager _hsmsDeviceManager;
+        private readonly TibrvService _tibrvService;
         
         public DataFlowService(
             IKepServerMonitoringService kepServerService, 
             KepServerEventHandler kepServerEventHandler,
-            HsmsDeviceManager hsmsDeviceManager)
+            HsmsDeviceManager hsmsDeviceManager,
+            TibrvService tibrvService)
         {
             _kepServerService = kepServerService;
             _kepServerEventHandler = kepServerEventHandler;
             _hsmsDeviceManager = hsmsDeviceManager;
-            
+            _tibrvService = tibrvService;
+
             // 订阅事件
             _kepServerService.DataChanged += OnKepServerDataChanged;
             _kepServerService.MappingTriggered += OnKepServerMappingTriggered;
@@ -218,17 +222,10 @@ namespace CIMMonitor.Services
                 // 根据消息类型确定Tibco主题
                 var topic = DetermineTibcoTopic(equipmentMessage.MessageType);
                 
-                // 通过TibcoService发送消息
-                var success = await TibcoService.Instance.SendMessageAsync(topic, xmlContent, "CIMMonitor");
-                
-                if (success)
-                {
-                    _logger.Info($"消息已通过TibcoRV发送到主题: {topic}");
-                }
-                else
-                {
-                    _logger.Error($"通过TibcoRV发送消息失败: {topic}");
-                }
+                // 通过TibrvService发送消息
+                await Task.Run(() => _tibrvService.SendMessageToWcf(xmlContent));
+
+                _logger.Info($"消息已通过TibcoRV发送到主题: {topic}");
             }
             catch (Exception ex)
             {

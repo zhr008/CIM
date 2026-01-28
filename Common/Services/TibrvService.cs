@@ -1,568 +1,452 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Common.Models;
-using log4net;
+using TIBCO.Rendezvous;
 
 namespace Common.Services
 {
-    /// <summary>
-    /// Tibrv服务 - 作为CIMMonitor和WCFServices之间的桥梁
-    /// 数据流向: PLC/KepServerEX/HSMS → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
-    /// </summary>
     public class TibrvService
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(TibrvService));
-        
-        private readonly TibrvRendezvousService _tibrvService;
-        
-        public TibrvService()
+        #region 字段、属性
+        private string _service;                //服务
+        private string _network;                //网络
+        private string _daemon;                 //守护进程
+        private string _messageField;           //消息字段
+        private string _listenSubject;          //侦听主题
+        private string _targetSubject;          //目标主题
+        private bool _isOpen = false;           //是否打开环境
+        private bool _isConnected = false;      //是否创建连接
+        private bool _isListen = false;         //是否创建侦听
+        private string _cmName;                 //My Name
+        private Task task = null;
+
+        private TIBCO.Rendezvous.NetTransport _transport;       //传输对象
+        private TIBCO.Rendezvous.Listener _listener;            //侦听器对象
+        private TIBCO.Rendezvous.Queue _queue;                  //消息队列
+
+        public bool IsListened { get { return _isListen; } set { _isListen = value; } }
+        public bool IsOpen { get { return _isConnected; } set { _isConnected = value; } }
+        public bool IsConnected { get { return _isOpen; } set { _isOpen = value; } }
+        public string Service { get { return _service; } set { _service = value; } }
+        public string Network { get { return _network; } set { _network = value; } }
+        public string Daemon { get { return _daemon; } set { _daemon = value; } }
+        public string MessageField { get => _messageField; set => _messageField = value; }
+        public string ListenSubject { get { return _listenSubject; } set { _listenSubject = value; } }
+        public string TargetSubject { get { return _targetSubject; } set { _targetSubject = value; } }
+        public string CmName { get => _cmName; set => _cmName = value; }
+        public TIBCO.Rendezvous.NetTransport Transport { get => _transport; set => _transport = value; }
+        public TIBCO.Rendezvous.Listener Listener { get => _listener; set => _listener = value; }
+        public TIBCO.Rendezvous.Queue Queue { get => _queue; set => _queue = value; }
+
+        #endregion
+
+        #region 构造函数
+        public TibrvService() { }
+        public TibrvService(string server, string network, string daemon)
         {
-            _tibrvService = new TibrvRendezvousService();
+            this.Service = server;
+            this.Network = network;
+            this.Daemon = daemon;
         }
-        
+        public TibrvService(string server, string network, string daemon, string listenSubject, string targetSubject)
+        {
+            this.Service = server;
+            this.Network = network;
+            this.Daemon = daemon;
+            this.ListenSubject = listenSubject;
+            this.TargetSubject = targetSubject;
+            this.ConnectedStatusHandler += OnConnectCallBack;
+        }
+        #endregion
+
+
+        #region 连接
         /// <summary>
-        /// 处理来自CIMMonitor的设备消息
-        /// 将消息转换为XML并通过TIBCO发送到WCFServices
+        /// 打开环境
         /// </summary>
-        public async Task<string> ProcessEquipmentMessageAsync(EquipmentMessage message)
+        public bool Open()
         {
             try
             {
-                log.Info($"处理设备消息: {message.EquipmentID} - {message.MessageType}");
-                
-                // 将设备消息转换为XML格式
-                var xmlContent = ConvertEquipmentMessageToXml(message);
-                
-                // 确定目标主题，根据消息类型发送到相应的WCFServices端点
-                var subject = DetermineSubjectFromMessageType(message.MessageType, message.EquipmentID);
-                
-                // 通过TIBCO发送XML消息到WCFServices
-                var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-                
-                if (sendResult)
+                TIBCO.Rendezvous.Environment.Open();
+                IsOpen = true;
+                string msg = $"打开环境成功！";
+                ErrorMessageHandler.Invoke(this, msg);
+                return IsOpen;
+            }
+            catch (Exception ex)
+            {
+                IsOpen = false;
+                return IsOpen;
+            }
+        }
+        /// <summary>
+        /// 外部连接
+        /// </summary>
+        public void StartConnect()
+        {
+            Connected();
+        }
+        /// <summary>
+        /// 内部连接
+        /// </summary>
+        private bool Connected()
+        {
+            if (IsOpen)
+            {
+                TryCreateConnect();
+            }
+            else
+            {
+                Open();
+                TryCreateConnect();
+            }
+            return IsConnected;
+        }
+        /// <summary>
+        /// 尝试创建连接，超时时间3s
+        /// </summary>
+        private async void TryCreateConnect()
+        {
+            string msg = string.Empty;
+            try
+            {
+                Task createTask = Task.Run(() => CreateConnect());
+
+                Task timeoutTask = Task.Delay(3000);
+
+                Task completedTask = await Task.WhenAny(createTask, timeoutTask);
+                if (completedTask == timeoutTask)
                 {
-                    var result = $"消息已发送到主题 '{subject}'";
-                    log.Info(result);
-                    return result;
+                    msg = $"\r\n连接超时...\r\nDaemon = {Daemon}，Network =  {Network} ，Service = {Service}";
+                    ErrorMessageHandler.Invoke(this, msg);
+                    IsConnected = false;
+                    ConnectedStatusHandler.Invoke(this, false);
+                    return;
                 }
-                else
+                IsConnected = true;
+                ConnectedStatusHandler.Invoke(this, true);
+            }
+            catch (Exception ex)
+            {
+                msg = $"\r\n连接异常...\r\nDaemon = {Daemon}，Network =  {Network} ，Service = {Service}";
+                IsConnected = false;
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, false);
+            }
+        }
+        /// <summary>
+        /// 创建连接的方法
+        /// </summary>
+        private void CreateConnect()
+        {
+            string msg = string.Empty;
+            try
+            {
+                msg = $"正在连接...: Daemon = {Daemon}，Network = {Network}，Service = {Service}";
+                ErrorMessageHandler.Invoke(this, msg);
+                Transport = new NetTransport(Service, Network, Daemon);
+                IsConnected = true;
+                msg = $"连接成功...";
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, true);
+            }
+            catch (Exception ex)
+            {
+                IsConnected = false;
+                msg = $"连接失败...";
+                ErrorMessageHandler.Invoke(this, msg);
+                ConnectedStatusHandler.Invoke(this, false);
+            }
+        }
+
+        /// <summary>
+        /// 断开连接
+        /// </summary>
+        public void DisConnected()
+        {
+            try
+            {
+                // 停止任务
+                if (task != null)
                 {
-                    var result = $"发送消息到主题 '{subject}' 失败";
-                    log.Error(result);
-                    return result;
+                    task = null;
+                }
+                
+                // 移除消息接收事件处理器
+                if (this.Listener != null)
+                {
+                    this.Listener.MessageReceived -= OnMessageReceivedCallBack;
+                }
+                
+                // 销毁监听器
+                if (Listener != null) 
+                {
+                    Listener.Destroy();
+                    Listener = null;
+                }
+                
+                // 销毁传输对象
+                if (Transport != null) 
+                {
+                    Transport.Destroy();
+                    Transport = null;
+                }
+                
+                // 清理队列
+                if (Queue != null)
+                {
+                    Queue = null;
+                }
+                
+                string msg = $"断开连接... : Daemon = {Daemon} ，Network = {Network}，Service = {Service}";
+                
+                // 关闭TIBCO环境
+                try
+                {
+                    TIBCO.Rendezvous.Environment.Close();
+                }
+                catch
+                {
+                    // 如果环境已经关闭，则忽略异常
+                }
+
+                IsListened = false;
+                IsConnected = false;
+                IsOpen = false;
+                
+                ErrorMessageHandler?.Invoke(this, msg);
+                ConnectedStatusHandler?.Invoke(this, false);
+                ListenedStatusHandler?.Invoke(this, false);
+                
+            }
+            catch (Exception ex)
+            {
+                string msg = $"断开连接时发生异常: {ex.Message}";
+                ErrorMessageHandler?.Invoke(this, msg);
+            }
+        }
+
+        #endregion
+
+        #region 侦听
+        /// <summary>
+        /// 尝试侦听
+        /// </summary>
+        private void TryCreateListen()
+        {
+            try
+            {
+                if (IsConnected && !IsListened)
+                {
+                    if (Transport == null)
+                    {
+                        string msg = $"transport 为空，未连接，请先连接！！！";
+                        ErrorMessageHandler.Invoke(this, msg);
+                        ListenedStatusHandler.Invoke(this, false);
+                        IsListened = false;
+                        return;
+                    }
+                    Queue = new TIBCO.Rendezvous.Queue();
+                    Listener = new Listener(Queue, Transport, ListenSubject, null);
+                    this.Listener.MessageReceived += OnMessageReceivedCallBack;
+                    IsListened = true;
+                    ListenedStatusHandler.Invoke(this, true);
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"处理设备消息失败: {ex.Message}", ex);
-                return $"错误: {ex.Message}";
+                IsListened = false;
+                string msg = $"侦听异常:{ex.Message}";
+                ErrorMessageHandler.Invoke(this, msg);
+                ListenedStatusHandler.Invoke(this, false);
             }
         }
-        
         /// <summary>
-        /// 处理XML消息
+        /// 内部侦听
         /// </summary>
-        public async Task<string> ProcessXmlMessageAsync(string xmlContent)
+        private void Listen()
         {
             try
             {
-                log.Info($"处理XML消息，长度: {xmlContent.Length} 字符");
-                
-                var doc = XDocument.Parse(xmlContent);
-                var root = doc.Root;
-                
-                if (root == null)
+                string msg = $"开始侦听...";
+                ErrorMessageHandler.Invoke(this, msg);
+                if (!this.IsListened)
                 {
-                    return "错误: XML格式无效";
-                }
-                
-                // 根据XML根元素类型处理不同类型的消息
-                var messageType = root.Name.LocalName;
-                
-                switch (messageType)
-                {
-                    case "EquipmentMessage":
-                        return await ProcessEquipmentXmlMessage(doc);
-                    case "ProductionData":
-                        return await ProcessProductionXmlMessage(doc);
-                    case "AlarmMessage":
-                        return await ProcessAlarmXmlMessage(doc);
-                    default:
-                        return await ProcessGenericXmlMessage(doc);
+                    TryCreateListen();
+                    if (this.IsListened)
+                    {
+                        task = new Task(() =>
+                        {
+                            while (this.IsListened)
+                            {
+                                Queue.Dispatch();
+                            }
+                        });
+                        task.Start();
+                        msg = $"侦听成功！！！";
+                        ErrorMessageHandler.Invoke(this, msg);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"处理XML消息失败: {ex.Message}", ex);
-                return $"错误: {ex.Message}";
+                this.IsListened = false;
+                string msg = $"侦听异常:{ex.Message}";
+                ErrorMessageHandler.Invoke(this, msg);
             }
         }
-        
-        /// <summary>
-        /// 处理设备XML消息
-        /// 直接通过TIBCO发送XML消息到WCFServices
-        /// </summary>
-        private async Task<string> ProcessEquipmentXmlMessage(XDocument doc)
+        #endregion
+
+        #region 发送
+        public void Send(string data)
         {
-            var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "Unknown";
-            var messageType = doc.Root?.Element("MessageType")?.Value ?? "Unknown";
-            var messageContent = doc.Root?.Element("MessageContent")?.Value ?? "";
-            
-            var equipmentMessage = new EquipmentMessage
+            if (Transport == null || !IsConnected)
             {
-                EquipmentID = equipmentId,
-                MessageType = messageType,
-                MessageContent = messageContent,
-                Timestamp = DateTime.Now,
-                Properties = new Dictionary<string, object>()
-            };
-            
-            // 添加额外属性
-            var propertiesElement = doc.Root?.Element("Properties");
-            if (propertiesElement != null)
-            {
-                foreach (var prop in propertiesElement.Elements())
-                {
-                    equipmentMessage.Properties[prop.Name.LocalName] = prop.Value;
-                }
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
             }
             
-            // 直接发送原始XML内容到WCFServices
-            var xmlContent = doc.ToString();
-            var subject = DetermineSubjectFromMessageType(messageType, equipmentId);
-            
-            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-            
-            if (sendResult)
-            {
-                var result = $"设备XML消息已发送到主题 '{subject}'";
-                log.Info(result);
-                return result;
-            }
-            else
-            {
-                var result = $"发送设备XML消息到主题 '{subject}' 失败";
-                log.Error(result);
-                return result;
-            }
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            message.SendSubject = TargetSubject;
+            message.AddField(MessageField, data);
+            Transport.Send(message);
         }
         
-        /// <summary>
-        /// 处理生产数据XML消息
-        /// 直接通过TIBCO发送XML消息到WCFServices
-        /// </summary>
-        private async Task<string> ProcessProductionXmlMessage(XDocument doc)
+        public void Send(string field, string data)
         {
-            var batchId = doc.Root?.Element("BatchId")?.Value ?? "Unknown";
-            var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "Unknown";
-            var processStepId = doc.Root?.Element("ProcessStepId")?.Value ?? "Unknown";
-            
-            // 直接发送原始XML内容到WCFServices
-            var xmlContent = doc.ToString();
-            var subject = DetermineSubjectFromMessageType("PRODUCTION_DATA", equipmentId);
-            
-            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-            
-            if (sendResult)
+            if (Transport == null || !IsConnected)
             {
-                var result = $"生产数据XML消息已发送到主题 '{subject}'";
-                log.Info(result);
-                return result;
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
             }
-            else
-            {
-                var result = $"发送生产数据XML消息到主题 '{subject}' 失败";
-                log.Error(result);
-                return result;
-            }
+            
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            message.SendSubject = TargetSubject;
+            message.AddField(field, data);
+            Transport.Send(message);
         }
         
         /// <summary>
-        /// 处理报警XML消息
-        /// 直接通过TIBCO发送XML消息到WCFServices
+        /// 异步发送XML消息
         /// </summary>
-        private async Task<string> ProcessAlarmXmlMessage(XDocument doc)
-        {
-            var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "Unknown";
-            var alarmCode = doc.Root?.Element("AlarmCode")?.Value ?? "Unknown";
-            var description = doc.Root?.Element("Description")?.Value ?? "";
-            
-            // 直接发送原始XML内容到WCFServices
-            var xmlContent = doc.ToString();
-            var subject = DetermineSubjectFromMessageType("ALARM", equipmentId);
-            
-            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-            
-            if (sendResult)
-            {
-                var result = $"报警XML消息已发送到主题 '{subject}'";
-                log.Info(result);
-                return result;
-            }
-            else
-            {
-                var result = $"发送报警XML消息到主题 '{subject}' 失败";
-                log.Error(result);
-                return result;
-            }
-        }
-        
-        /// <summary>
-        /// 处理通用XML消息
-        /// 直接通过TIBCO发送XML消息到WCFServices
-        /// </summary>
-        private async Task<string> ProcessGenericXmlMessage(XDocument doc)
-        {
-            var rootName = doc.Root?.Name?.LocalName ?? "Unknown";
-            var equipmentId = doc.Root?.Attribute("EquipmentId")?.Value ?? "Unknown";
-            
-            // 直接发送原始XML内容到WCFServices
-            var xmlContent = doc.ToString();
-            var subject = DetermineSubjectFromMessageType(rootName, equipmentId);
-            
-            var sendResult = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-            
-            if (sendResult)
-            {
-                var result = $"通用XML消息已发送到主题 '{subject}'";
-                log.Info(result);
-                return result;
-            }
-            else
-            {
-                var result = $"发送通用XML消息到主题 '{subject}' 失败";
-                log.Error(result);
-                return result;
-            }
-        }
-        
-        /// <summary>
-        /// 发送设备状态到WCFServices
-        /// 通过TIBCO发送状态消息
-        /// </summary>
-        public async Task<bool> SendEquipmentStatusAsync(string equipmentId, string status)
+        /// <param name="subject">消息主题</param>
+        /// <param name="xmlContent">XML内容</param>
+        /// <returns>发送结果</returns>
+        public async Task<bool> SendXmlMessageAsync(string subject, string xmlContent)
         {
             try
             {
-                log.Info($"发送设备状态: {equipmentId} = {status}");
+                if (Transport == null || !IsConnected)
+                {
+                    string msg = "TIBCO transport is not initialized or not connected.";
+                    ErrorMessageHandler?.Invoke(this, msg);
+                    return false;
+                }
                 
-                // 创建包含设备状态的XML消息
-                var xmlContent = $@"
-                <EquipmentStatusUpdate>
-                    <EquipmentId>{equipmentId}</EquipmentId>
-                    <Status>{status}</Status>
-                    <Timestamp>{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
-                </EquipmentStatusUpdate>";
+                await Task.Run(() =>
+                {
+                    TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+                    message.SendSubject = subject;
+                    message.AddField("XMLContent", xmlContent);  // 使用标准字段名
+                    Transport.Send(message);
+                });
                 
-                var subject = $"EQUIPMENT.STATUS.{equipmentId}";
-                
-                var result = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-                
-                log.Info($"设备状态发送结果: {result}");
-                return result;
+                return true;
             }
             catch (Exception ex)
             {
-                log.Error($"发送设备状态失败: {ex.Message}", ex);
+                string msg = $"发送XML消息失败: {ex.Message}";
+                ErrorMessageHandler?.Invoke(this, msg);
                 return false;
             }
         }
         
         /// <summary>
-        /// 获取设备状态
-        /// 由于TIBCO是发布/订阅模式，这里返回一个默认状态或从缓存中获取
-        /// 实际实现中可能需要查询数据库或其他持久化存储
+        /// 发送设备消息
         /// </summary>
-        public async Task<EquipmentStatus> GetEquipmentStatusAsync(string equipmentId)
+        /// <param name="equipmentId">设备ID</param>
+        /// <param name="messageType">消息类型</param>
+        /// <param name="data">消息数据</param>
+        public void SendEquipmentMessage(string equipmentId, string messageType, string data)
         {
-            try
+            if (Transport == null || !IsConnected)
             {
-                log.Info($"获取设备状态: {equipmentId}");
-                
-                // 在TIBCO模式下，我们通常不能直接"请求"状态，只能订阅更新
-                // 这里返回一个默认状态，实际实现中应从缓存或数据库获取最新状态
-                var status = new EquipmentStatus
-                {
-                    EquipmentID = equipmentId,
-                    Status = "Unknown",
-                    LastUpdate = DateTime.Now
-                };
-                
-                log.Info($"获取设备状态结果: {status.Status}");
-                return status;
+                throw new InvalidOperationException("TIBCO transport is not initialized or not connected.");
             }
-            catch (Exception ex)
+            
+            TIBCO.Rendezvous.Message message = new TIBCO.Rendezvous.Message();
+            string subject = $"EQUIPMENT.{messageType}.{equipmentId}";
+            message.SendSubject = subject;
+            message.AddField("Data", data);
+            message.AddField("EquipmentId", equipmentId);
+            message.AddField("MessageType", messageType);
+            message.AddField("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+            
+            Transport.Send(message);
+        }
+
+
+        #endregion
+
+        public void OnListenCallBack(object sender, bool listenStatu)
+        {
+            IsListened = listenStatu;
+        }
+        public void OnConnectCallBack(object sender, bool connectStatu)
+        {
+            IsConnected = connectStatu;
+            if (IsConnected)
             {
-                log.Error($"获取设备状态失败: {ex.Message}", ex);
-                return new EquipmentStatus
-                {
-                    EquipmentID = equipmentId,
-                    Status = "Error"
-                };
+                Listen();
             }
         }
-        
+
         /// <summary>
-        /// 发送报警信息到WCFServices
-        /// 通过TIBCO发送报警消息
+        /// 消息接收
         /// </summary>
-        public async Task<bool> SendAlarmAsync(string equipmentId, string alarmCode, string description)
+        public void OnMessageReceivedCallBack(object sender, MessageReceivedEventArgs messageReceivedEventArgs)
         {
-            try
+            messageReceivedHandler?.Invoke(sender, messageReceivedEventArgs);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="messageReceivedEventArgs"></param>
+        public delegate void MessageReceivedHandler(object sender, MessageReceivedEventArgs messageReceivedEventArgs);
+        public MessageReceivedHandler messageReceivedHandler;
+        public event EventHandler<string> ErrorMessageHandler;
+        public event EventHandler<bool> ConnectedStatusHandler;
+        public event EventHandler<bool> ListenedStatusHandler;
+
+        #region IDisposable Support
+        private bool disposedValue = false; // 要检测冗余调用
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                log.Info($"发送报警: {equipmentId} - {alarmCode}: {description}");
-                
-                // 创建包含报警信息的XML消息
-                var xmlContent = $@"
-                <AlarmMessage>
-                    <EquipmentId>{equipmentId}</EquipmentId>
-                    <AlarmCode>{alarmCode}</AlarmCode>
-                    <Description>{description}</Description>
-                    <Timestamp>{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
-                </AlarmMessage>";
-                
-                var subject = $"ALARM.{equipmentId}";
-                
-                var result = await _tibrvService.SendXmlMessageAsync(subject, xmlContent);
-                
-                log.Info($"报警发送结果: {result}");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"发送报警失败: {ex.Message}", ex);
-                return false;
+                if (disposing)
+                {
+                    // 释放托管状态(托管对象)
+                    DisConnected();
+                }
+
+                // 释放未托管的资源(未托管的对象)并重写终结器
+                // 将大型字段设置为 null
+                disposedValue = true;
             }
         }
-        
-        /// <summary>
-        /// 释放资源
-        /// </summary>
+
         public void Dispose()
         {
-            try
-            {
-                // 释放TIBCO服务资源
-                _tibrvService?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                log.Error("释放TibrvService资源时出错", ex);
-            }
+            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
-        
-        /// <summary>
-        /// 将设备消息转换为XML格式
-        /// </summary>
-        private string ConvertEquipmentMessageToXml(EquipmentMessage message)
-        {
-            var xml = $@"
-            <EquipmentMessage>
-                <EquipmentId>{message.EquipmentID}</EquipmentId>
-                <MessageType>{message.MessageType}</MessageType>
-                <MessageContent>{message.MessageContent}</MessageContent>
-                <Timestamp>{message.Timestamp:yyyy-MM-ddTHH:mm:ss.fffZ}</Timestamp>
-                <Properties>
-                    {string.Join("", message.Properties.Select(p => $"<{p.Key}>{p.Value}</{p.Key}>"))}
-                </Properties>
-            </EquipmentMessage>";
-            
-            return xml.Trim();
-        }
-        
-        /// <summary>
-        /// 根据消息类型确定TIBCO主题
-        /// </summary>
-        private string DetermineSubjectFromMessageType(string messageType, string equipmentId)
-        {
-            // 根据消息类型映射到不同的TIBCO主题
-            switch (messageType.ToUpper())
-            {
-                case "ALARM":
-                case "ALARM_MESSAGE":
-                    return $"ALARM.{equipmentId}";
-                case "PRODUCTION_DATA":
-                    return $"PRODUCTION.DATA.{equipmentId}";
-                case "STATUS_UPDATE":
-                    return $"EQUIPMENT.STATUS.{equipmentId}";
-                case "CONFIG_CHANGE":
-                    return $"CONFIG.CHANGE.{equipmentId}";
-                case "HEARTBEAT":
-                    return $"HEARTBEAT.{equipmentId}";
-                default:
-                    return $"MESSAGES.{messageType.ToUpper()}.{equipmentId}";
-            }
-        }
-        
-        /// <summary>
-        /// 执行业务逻辑处理
-        /// 将业务逻辑从WCFServices迁移到此处
-        /// </summary>
-        public async Task<string> ProcessBusinessLogicAsync(string messageType, string xmlContent)
-        {
-            try
-            {
-                log.Info($"执行业务逻辑处理: {messageType}");
-                
-                // 根据消息类型执行不同的业务逻辑
-                switch (messageType.ToUpper())
-                {
-                    case "PRODUCTION_DATA":
-                        return await ProcessProductionDataLogicAsync(xmlContent);
-                    case "ALARM_MESSAGE":
-                        return await ProcessAlarmLogicAsync(xmlContent);
-                    case "STATUS_UPDATE":
-                        return await ProcessStatusUpdateLogicAsync(xmlContent);
-                    case "CONFIG_CHANGE":
-                        return await ProcessConfigChangeLogicAsync(xmlContent);
-                    default:
-                        return await ProcessGenericBusinessLogicAsync(xmlContent);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"执行业务逻辑失败: {ex.Message}", ex);
-                return $"错误: {ex.Message}";
-            }
-        }
-        
-        /// <summary>
-        /// 处理生产数据业务逻辑
-        /// </summary>
-        private async Task<string> ProcessProductionDataLogicAsync(string xmlContent)
-        {
-            log.Info("处理生产数据业务逻辑");
-            
-            try
-            {
-                var doc = XDocument.Parse(xmlContent);
-                var lotId = doc.Root?.Element("LotId")?.Value ?? "";
-                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
-                var processStepId = doc.Root?.Element("ProcessStepId")?.Value ?? "";
-                
-                // 这里可以添加具体的业务逻辑，比如：
-                // 1. 验证数据完整性
-                // 2. 更新生产状态
-                // 3. 记录生产历史
-                // 4. 触发后续工艺步骤
-                
-                log.Info($"生产数据处理完成 - Lot: {lotId}, 设备: {equipmentId}, 工艺: {processStepId}");
-                return "生产数据处理成功";
-            }
-            catch (Exception ex)
-            {
-                log.Error($"处理生产数据业务逻辑失败: {ex.Message}", ex);
-                return $"生产数据处理失败: {ex.Message}";
-            }
-        }
-        
-        /// <summary>
-        /// 处理报警业务逻辑
-        /// </summary>
-        private async Task<string> ProcessAlarmLogicAsync(string xmlContent)
-        {
-            log.Info("处理报警业务逻辑");
-            
-            try
-            {
-                var doc = XDocument.Parse(xmlContent);
-                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
-                var alarmCode = doc.Root?.Element("AlarmCode")?.Value ?? "";
-                var description = doc.Root?.Element("Description")?.Value ?? "";
-                
-                // 这里可以添加具体的报警处理逻辑，比如：
-                // 1. 记录报警日志
-                // 2. 通知相关人员
-                // 3. 触发应急响应
-                // 4. 更新设备状态
-                
-                log.Info($"报警处理完成 - 设备: {equipmentId}, 报警码: {alarmCode}, 描述: {description}");
-                return "报警处理成功";
-            }
-            catch (Exception ex)
-            {
-                log.Error($"处理报警业务逻辑失败: {ex.Message}", ex);
-                return $"报警处理失败: {ex.Message}";
-            }
-        }
-        
-        /// <summary>
-        /// 处理状态更新业务逻辑
-        /// </summary>
-        private async Task<string> ProcessStatusUpdateLogicAsync(string xmlContent)
-        {
-            log.Info("处理状态更新业务逻辑");
-            
-            try
-            {
-                var doc = XDocument.Parse(xmlContent);
-                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
-                var status = doc.Root?.Element("Status")?.Value ?? "";
-                
-                // 这里可以添加具体的状态更新逻辑，比如：
-                // 1. 更新设备状态表
-                // 2. 检查状态变更合法性
-                // 3. 触发相关业务流程
-                
-                log.Info($"状态更新处理完成 - 设备: {equipmentId}, 状态: {status}");
-                return "状态更新处理成功";
-            }
-            catch (Exception ex)
-            {
-                log.Error($"处理状态更新业务逻辑失败: {ex.Message}", ex);
-                return $"状态更新处理失败: {ex.Message}";
-            }
-        }
-        
-        /// <summary>
-        /// 处理配置变更业务逻辑
-        /// </summary>
-        private async Task<string> ProcessConfigChangeLogicAsync(string xmlContent)
-        {
-            log.Info("处理配置变更业务逻辑");
-            
-            try
-            {
-                var doc = XDocument.Parse(xmlContent);
-                var equipmentId = doc.Root?.Element("EquipmentId")?.Value ?? "";
-                var configKey = doc.Root?.Element("ConfigKey")?.Value ?? "";
-                
-                // 这里可以添加具体的配置变更逻辑，比如：
-                // 1. 验证配置参数
-                // 2. 更新配置数据库
-                // 3. 通知相关组件
-                // 4. 记录变更历史
-                
-                log.Info($"配置变更处理完成 - 设备: {equipmentId}, 配置项: {configKey}");
-                return "配置变更处理成功";
-            }
-            catch (Exception ex)
-            {
-                log.Error($"处理配置变更业务逻辑失败: {ex.Message}", ex);
-                return $"配置变更处理失败: {ex.Message}";
-            }
-        }
-        
-        /// <summary>
-        /// 处理通用业务逻辑
-        /// </summary>
-        private async Task<string> ProcessGenericBusinessLogicAsync(string xmlContent)
-        {
-            log.Info("处理通用业务逻辑");
-            
-            try
-            {
-                // 对于未知类型的消息，进行通用处理
-                log.Info("执行通用业务处理流程");
-                return "通用业务处理成功";
-            }
-            catch (Exception ex)
-            {
-                log.Error($"处理通用业务逻辑失败: {ex.Message}", ex);
-                return $"通用业务处理失败: {ex.Message}";
-            }
-        }
+        #endregion
     }
 }

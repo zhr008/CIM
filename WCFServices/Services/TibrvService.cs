@@ -10,7 +10,7 @@ namespace WCFServices.Services
     /// </summary>
     public class TibrvService : IDisposable
     {
-        private readonly TibrvRendezvousService _tibrvService;
+        private readonly Common.Services.TibrvService _tibrvService;
         
         // 主题配置
         private const string REQUEST_SUBJECT = "CIM.REQUEST";
@@ -19,7 +19,7 @@ namespace WCFServices.Services
 
         public TibrvService(string service, string network, string daemon)
         {
-            _tibrvService = new TibrvRendezvousService(service, network, daemon, REQUEST_SUBJECT, RESPONSE_SUBJECT);
+            _tibrvService = new Common.Services.TibrvService(service, network, daemon, REQUEST_SUBJECT, RESPONSE_SUBJECT);
             
             // 注册事件处理器
             _tibrvService.ErrorMessageHandler += OnErrorMessage;

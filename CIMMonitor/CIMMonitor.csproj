@@ -32,4 +32,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="TIBCO.Rendezvous">
+      <HintPath>..\Common\TIBCO.Rendezvous.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

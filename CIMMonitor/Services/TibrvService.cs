@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Common.Services;
+using TIBCO.Rendezvous;
 
 namespace CIMMonitor.Services
 {
@@ -10,7 +11,7 @@ namespace CIMMonitor.Services
     /// </summary>
     public class TibrvService : IDisposable
     {
-        private readonly TibrvRendezvousService _tibrvService;
+        private readonly Common.Services.TibrvService _tibrvService;
         
         // 主题配置
         private const string REQUEST_SUBJECT = "CIM.REQUEST";
@@ -19,7 +20,7 @@ namespace CIMMonitor.Services
 
         public TibrvService(string service, string network, string daemon)
         {
-            _tibrvService = new TibrvRendezvousService(service, network, daemon, LISTEN_SUBJECT, REQUEST_SUBJECT);
+            _tibrvService = new Common.Services.TibrvService(service, network, daemon, LISTEN_SUBJECT, REQUEST_SUBJECT);
             
             // 注册事件处理器
             _tibrvService.ErrorMessageHandler += OnErrorMessage;
@@ -35,32 +36,6 @@ namespace CIMMonitor.Services
         {
             _tibrvService.Open();
             _tibrvService.StartConnect();
-        }
-
-        /// <summary>
-        /// 发送请求到WCF服务并等待响应
-        /// </summary>
-        /// <param name="requestData">请求数据</param>
-        /// <returns>响应数据</returns>
-        public async Task<string> SendRequestToWcfAsync(string requestData)
-        {
-            try
-            {
-                string replySubject = $"{REPLY_SUBJECT_PREFIX}.{Guid.NewGuid()}";
-                
-                string response = await _tibrvService.SendRequestAndWaitResponse(
-                    REQUEST_SUBJECT, 
-                    replySubject, 
-                    requestData, 
-                    10000); // 10秒超时
-                
-                return response;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"发送请求到WCF服务失败: {ex.Message}");
-                throw;
-            }
         }
 
         /// <summary>
@@ -83,15 +58,17 @@ namespace CIMMonitor.Services
         /// <summary>
         /// 消息接收事件处理器
         /// </summary>
-        private void OnMessageReceived(object sender, TIBCO.Rendezvous.MessageReceivedEventArgs e)
+        private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
         {
             try
             {
-                string messageContent = _tibrvService.ParseMessageContent(e.Message);
-                Console.WriteLine($"收到响应消息: {messageContent}");
-                
+                TIBCO.Rendezvous.Message message = e.Message;
+                string receiveData = message.GetFieldByIndex(0);
+                string fieldName = message.GetFieldByIndex(0).Name;
+                Console.WriteLine($"send subject = {message.SendSubject}\r\n field name = {fieldName}\r\n{receiveData}");
+
                 // 在这里处理收到的响应消息
-                ProcessReceivedMessage(messageContent);
+                ProcessReceivedMessage(receiveData);
             }
             catch (Exception ex)
             {

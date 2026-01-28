@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="TIBCO.Rendezvous.dll" />
+    <None Remove="TIBCO.Rendezvous.dll.config" />
+    <None Remove="TIBCO.Rendezvous.netmodule" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
     <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
     <PackageReference Include="log4net" Version="2.0.15" />
@@ -19,10 +25,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TIBCO.Rendezvous.dll">
+    <ApplicationDefinition Include="TIBCO.Rendezvous.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TIBCO.Rendezvous.dll.config">
+    </ApplicationDefinition>
+    <ApplicationDefinition Include="TIBCO.Rendezvous.dll.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ApplicationDefinition>
+    <ApplicationDefinition Include="TIBCO.Rendezvous.netmodule">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ApplicationDefinition>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="TIBCO - 复制.Rendezvous.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
