@@ -9,7 +9,7 @@ using CoreWCF;
 namespace WCFServices.Services
 {
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = CoreWCF.ConcurrencyMode.Multiple)]
-    public class MesService : IMesService
+    public class MesService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MesService));
         

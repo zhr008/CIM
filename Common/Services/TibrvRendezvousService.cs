@@ -1,6 +1,7 @@
 using Common.Models;
 using log4net;
 using System.Runtime.InteropServices;
+using TIBCO.Rendezvous;
 
 namespace Common.Services
 {
@@ -9,6 +10,38 @@ namespace Common.Services
     /// </summary>
     public class TibrvRendezvousService : IDisposable
     {
+        #region 字段、属性
+        private string _service;                //服务
+        private string _network;                //网络
+        private string _daemon;                 //守护进程
+        private string _messageField;           //消息字段
+        private string _listenSubject;          //侦听主题
+        private string _targetSubject;          //目标主题
+        private bool _isOpen = false;           //是否打开环境
+        private bool _isConnected = false;      //是否创建连接
+        private bool _isListen = false;         //是否创建侦听
+        private string _cmName;                 //My Name
+        private Task task = null;
+
+        private TIBCO.Rendezvous.NetTransport _transport;       //传输对象
+        private TIBCO.Rendezvous.Listener _listener;            //侦听器对象
+        private TIBCO.Rendezvous.Queue _queue;                  //消息队列
+
+        public bool IsListened { get { return _isListen; } set { _isListen = value; } }
+        public bool IsOpen { get { return _isConnected; } set { _isConnected = value; } }
+        public bool IsConnected { get { return _isOpen; } set { _isOpen = value; } }
+        public string Service { get { return _service; } set { _service = value; } }
+        public string Network { get { return _network; } set { _network = value; } }
+        public string Daemon { get { return _daemon; } set { _daemon = value; } }
+        public string MessageField { get => _messageField; set => _messageField = value; }
+        public string ListenSubject { get { return _listenSubject; } set { _listenSubject = value; } }
+        public string TargetSubject { get { return _targetSubject; } set { _targetSubject = value; } }
+        public string CmName { get => _cmName; set => _cmName = value; }
+        public TIBCO.Rendezvous.NetTransport Transport { get => _transport; set => _transport = value; }
+        public TIBCO.Rendezvous.Listener Listener { get => _listener; set => _listener = value; }
+        public TIBCO.Rendezvous.Queue Queue { get => _queue; set => _queue = value; }
+
+
         private static readonly ILog log = LogManager.GetLogger(typeof(TibrvRendezvousService));
         private bool isConnected;
         private IntPtr _transportHandle = IntPtr.Zero;
@@ -80,10 +113,10 @@ namespace Common.Services
                 {
                     // 在实际实现中，这里会调用TIBCO API如：
                     // TIBCO.RV API calls to create transport
-                    // Tibrv.Open();
-                    // TibrvTransport transport = new TibrvTransport();
-                    // transport.Create(service, network, daemon);
-                    
+                    Tibrv.Open();
+                    TibrvTransport transport = new TibrvTransport();
+                    transport.Create(service, network, daemon);
+
                     // 模拟连接创建成功
                     _transportHandle = new IntPtr(1); // 模拟句柄
                     _queueHandle = new IntPtr(2);     // 模拟句柄
