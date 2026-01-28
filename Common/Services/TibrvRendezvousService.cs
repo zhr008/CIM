@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-using WCFServices.Contracts;
 using Common.Models;
 using log4net;
 

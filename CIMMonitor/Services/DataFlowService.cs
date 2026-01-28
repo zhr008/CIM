@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.ServiceModel;
-using WCFServices.Contracts;
 using Common.Models;
 using CIMMonitor.Models.KepServer;
 using HsmsSimulator.Models;
