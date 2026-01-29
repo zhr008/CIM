@@ -23,18 +23,18 @@ namespace CIMMonitor.Services
         private readonly IKepServerMonitoringService _kepServerService;
         private readonly KepServerEventHandler _kepServerEventHandler;
         private readonly HsmsDeviceManager _hsmsDeviceManager;
-        private readonly TibcoRV _tibcoRVService;
+        private readonly TibcoRV _tibcoRV;
         
         public DataFlowService(
             IKepServerMonitoringService kepServerService, 
             KepServerEventHandler kepServerEventHandler,
             HsmsDeviceManager hsmsDeviceManager,
-            TibrvService tibrvService)
+            TibcoRV tibcoRV)
         {
             _kepServerService = kepServerService;
             _kepServerEventHandler = kepServerEventHandler;
             _hsmsDeviceManager = hsmsDeviceManager;
-            _tibrvService = tibrvService;
+            _tibcoRV = tibcoRV;
 
             // 订阅事件
             _kepServerService.DataChanged += OnKepServerDataChanged;
@@ -223,7 +223,7 @@ namespace CIMMonitor.Services
                 var topic = DetermineTibcoTopic(equipmentMessage.MessageType);
                 
                 // 通过TibrvService发送消息
-                await Task.Run(() => _tibrvService.SendMessageToWcf(xmlContent));
+                await Task.Run(() => _tibcoRV.Send(xmlContent));
 
                 _logger.Info($"消息已通过TibcoRV发送到主题: {topic}");
             }

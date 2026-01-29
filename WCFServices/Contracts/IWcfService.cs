@@ -1,3 +1,4 @@
+using CoreWCF;
 using System.ServiceModel;
 
 namespace WCFServices.Contracts

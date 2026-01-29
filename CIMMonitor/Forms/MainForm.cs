@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using CIMMonitor.Services;
 using CIMMonitor.Models.KepServer;
+using Common.Services;
 
 namespace CIMMonitor.Forms
 {

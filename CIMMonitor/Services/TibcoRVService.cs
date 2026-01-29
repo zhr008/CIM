@@ -9,24 +9,24 @@ namespace CIMMonitor.Services
     /// CIM Monitor端的TIBCO Rendezvous服务
     /// 负责向WCFServices发送消息，并接收响应
     /// </summary>
-    public class TibrvService : IDisposable
+    public class TibcoRVService : IDisposable
     {
-        private readonly Common.Services.TibcoRV _tibcoRVService;
+        private readonly Common.Services.TibcoRV _tibcoRV;
         
         // 主题配置
         private const string REQUEST_SUBJECT = "CIM.REQUEST";
         private const string REPLY_SUBJECT_PREFIX = "CIM.REPLY";
         private const string LISTEN_SUBJECT = "WCF.RESPONSE"; // 监听来自WCF服务的响应
 
-        public TibrvService(string service, string network, string daemon)
+        public TibcoRVService(string service, string network, string daemon)
         {
-            _tibcoRVService = new Common.Services.TibcoRV(service, network, daemon, LISTEN_SUBJECT, REQUEST_SUBJECT);
+            _tibcoRV = new Common.Services.TibcoRV(service, network, daemon, LISTEN_SUBJECT, REQUEST_SUBJECT);
             
             // 注册事件处理器
-            _tibcoRVService.ErrorMessageHandler += OnErrorMessage;
-            _tibcoRVService.ConnectedStatusHandler += OnConnectedStatusChanged;
-            _tibcoRVService.ListenedStatusHandler += OnListenedStatusChanged;
-            _tibcoRVService.messageReceivedHandler += OnMessageReceived;
+            _tibcoRV.ErrorMessageHandler += OnErrorMessage;
+            _tibcoRV.ConnectedStatusHandler += OnConnectedStatusChanged;
+            _tibcoRV.ListenedStatusHandler += OnListenedStatusChanged;
+            _tibcoRV.messageReceivedHandler += OnMessageReceived;
         }
 
         /// <summary>
@@ -34,8 +34,8 @@ namespace CIMMonitor.Services
         /// </summary>
         public void Initialize()
         {
-            _tibcoRVService.Open();
-            _tibcoRVService.StartConnect();
+            _tibcoRV.Open();
+            _tibcoRV.StartConnect();
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace CIMMonitor.Services
         {
             try
             {
-                _tibcoRVService.Send(messageData);
+                _tibcoRV.Send(messageData);
             }
             catch (Exception ex)
             {
@@ -114,7 +114,7 @@ namespace CIMMonitor.Services
         /// </summary>
         public void Disconnect()
         {
-            _tibcoRVService.DisConnected();
+            _tibcoRV.DisConnected();
         }
 
         #region IDisposable Support
@@ -127,7 +127,7 @@ namespace CIMMonitor.Services
                 if (disposing)
                 {
                     // 释放托管状态(托管对象)
-                    _tibcoRVService?.Dispose();
+                    _tibcoRV?.Dispose();
                 }
 
                 // 释放未托管的资源(未托管的对象)并重写终结器
