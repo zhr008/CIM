@@ -11,7 +11,7 @@ namespace WCFServices.Services
     {
         private readonly IMssqlRepository _repository;
         private readonly ILogger<MessageService> _logger;
-        private TibrvService _tibrvService;
+        private TibcoRV _tibcoRVService;
         private readonly string _tibrvServiceName;
         private readonly string _tibrvNetwork;
         private readonly string _tibrvDaemon;
@@ -30,23 +30,23 @@ namespace WCFServices.Services
             _listenSubject = configuration.GetValue<string>("Tibrv:ListenSubject") ?? "CIM.XML.DATA.IN";
             _targetSubject = configuration.GetValue<string>("Tibrv:TargetSubject") ?? "CIM.XML.DATA.OUT";
 
-            // Initialize Tibrv service
-            _tibrvService = new TibrvService(_tibrvServiceName, _tibrvNetwork, _tibrvDaemon, _listenSubject, _targetSubject);
+            // Initialize TibcoRV service
+            _tibcoRVService = new TibcoRV(_tibrvServiceName, _tibrvNetwork, _tibrvDaemon, _listenSubject, _targetSubject);
             
             // Subscribe to events
-            _tibrvService.ErrorMessageHandler += OnErrorMessage;
-            _tibrvService.ConnectedStatusHandler += OnConnectedStatusChanged;
-            _tibrvService.ListenedStatusHandler += OnListenedStatusChanged;
-            _tibrvService.messageReceivedHandler += OnMessageReceived;
+            _tibcoRVService.ErrorMessageHandler += OnErrorMessage;
+            _tibcoRVService.ConnectedStatusHandler += OnConnectedStatusChanged;
+            _tibcoRVService.ListenedStatusHandler += OnListenedStatusChanged;
+            _tibcoRVService.messageReceivedHandler += OnMessageReceived;
         }
 
         public async Task<bool> PublishMessageAsync(MessageModel message)
         {
             try
             {
-                if (_tibrvService.IsConnected)
+                if (_tibcoRVService.IsConnected)
                 {
-                    await _tibrvService.SendXmlMessageAsync(_targetSubject, message.Content);
+                    await _tibcoRVService.SendXmlMessageAsync(_targetSubject, message.Content);
                     _logger.LogInformation($"Published message to TIBRV: {message.Id}");
                     return true;
                 }
@@ -92,17 +92,17 @@ namespace WCFServices.Services
                 _logger.LogInformation("Starting to listen for TIBRV messages...");
                 
                 // Initialize the TIBRV environment
-                if (!_tibrvService.Open())
+                if (!_tibcoRVService.Open())
                 {
                     _logger.LogError("Failed to open TIBRV environment");
                     return;
                 }
-                _tibrvService.messageReceivedHandler += OnMessageReceived;
-                //_tibrvService.ListenedStatusHandler += OnListened;
-                //_tibrvService.ConnectedStatusHandler += OnConnected;
-                //_tibrvService.ErrorMessageHandler += TibcoRVTHelper_ErrorMessageHandler;
+                _tibcoRVService.messageReceivedHandler += OnMessageReceived;
+                //_tibcoRVService.ListenedStatusHandler += OnListened;
+                //_tibcoRVService.ConnectedStatusHandler += OnConnected;
+                //_tibcoRVService.ErrorMessageHandler += TibcoRVTHelper_ErrorMessageHandler;
                 // Connect to TIBRV
-                _tibrvService.StartConnect();
+                _tibcoRVService.StartConnect();
                 
                 _logger.LogInformation("TIBRV listener started successfully");
             }
@@ -117,7 +117,7 @@ namespace WCFServices.Services
             try
             {
                 _logger.LogInformation("Stopping TIBRV listener...");
-                _tibrvService.DisConnected();
+                _tibcoRVService.DisConnected();
                 _logger.LogInformation("TIBRV listener stopped successfully");
             }
             catch (Exception ex)
@@ -222,8 +222,8 @@ namespace WCFServices.Services
 
         public void Dispose()
         {
-            _tibrvService?.DisConnected();
-            _tibrvService?.Dispose();
+            _tibcoRVService?.DisConnected();
+            _tibcoRVService?.Dispose();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace WCFServices.Adapters
         private readonly IWcfService _wcfService;
         private readonly IMssqlRepository _repository;
         private readonly ILogger<TibrvToWcfAdapter> _logger;
-        private readonly TibrvService _tibrvService;
+        private readonly TibcoRV _tibcoRVService;
 
         public TibrvToWcfAdapter(IWcfService wcfService, IMssqlRepository repository, ILogger<TibrvToWcfAdapter> logger)
         {
@@ -18,37 +18,37 @@ namespace WCFServices.Adapters
             _repository = repository;
             _logger = logger;
             
-            // We'll initialize the TibrvService separately and pass it here
-            _tibrvService = null; // Will be set later
+            // We'll initialize the TibcoRVService separately and pass it here
+            _tibcoRVService = null; // Will be set later
         }
 
-        public TibrvToWcfAdapter(IWcfService wcfService, IMssqlRepository repository, ILogger<TibrvToWcfAdapter> logger, TibrvService tibrvService)
+        public TibrvToWcfAdapter(IWcfService wcfService, IMssqlRepository repository, ILogger<TibrvToWcfAdapter> logger, TibcoRV tibcoRVService)
         {
             _wcfService = wcfService;
             _repository = repository;
             _logger = logger;
-            _tibrvService = tibrvService;
+            _tibcoRVService = tibcoRVService;
         }
 
         public void StartListeningForTibrvMessages()
         {
-            if (_tibrvService == null)
+            if (_tibcoRVService == null)
             {
-                _logger.LogError("TibrvService is not initialized.");
+                _logger.LogError("TibcoRVService is not initialized.");
                 return;
             }
 
             // Subscribe to the message received event
-            _tibrvService.messageReceivedHandler += HandleTibrvMessageReceived;
+            _tibcoRVService.messageReceivedHandler += HandleTibrvMessageReceived;
             
             _logger.LogInformation("Started listening for Tibrv messages to forward to WCF service.");
         }
 
         public void StopListeningForTibrvMessages()
         {
-            if (_tibrvService != null)
+            if (_tibcoRVService != null)
             {
-                _tibrvService.messageReceivedHandler -= HandleTibrvMessageReceived;
+                _tibcoRVService.messageReceivedHandler -= HandleTibrvMessageReceived;
                 _logger.LogInformation("Stopped listening for Tibrv messages.");
             }
         }

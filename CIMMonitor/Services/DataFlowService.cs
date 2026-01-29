@@ -13,8 +13,8 @@ namespace CIMMonitor.Services
     /// <summary>
     /// 数据流向服务 - 统一处理从设备到数据库的数据流
     /// 支持两种数据流：
-    /// 1. PLC → KepServerEX → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
-    /// 2. PCL → HSMS → CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
+    /// 1. PLC → KepServerEX → CIMMonitor → TibcoTibrvService → WCFServices → DB
+    /// 2. PCL → HSMS → CIMMonitor → TibcoTibrvService → WCFServices → DB
     /// </summary>
     public class DataFlowService : IDisposable
     {
@@ -23,7 +23,7 @@ namespace CIMMonitor.Services
         private readonly IKepServerMonitoringService _kepServerService;
         private readonly KepServerEventHandler _kepServerEventHandler;
         private readonly HsmsDeviceManager _hsmsDeviceManager;
-        private readonly TibrvService _tibrvService;
+        private readonly TibcoRV _tibcoRVService;
         
         public DataFlowService(
             IKepServerMonitoringService kepServerService, 
@@ -70,7 +70,7 @@ namespace CIMMonitor.Services
                     }
                 };
 
-                // 发送到TibcoTibrvService → WCFServices → ORACLE
+                // 发送到TibcoTibrvService → WCFServices → DB
                 await ForwardToMesService(equipmentMessage);
             }
             catch (Exception ex)
@@ -104,7 +104,7 @@ namespace CIMMonitor.Services
                     }
                 };
 
-                // 发送到TibcoTibrvService → WCFServices → ORACLE
+                // 发送到TibcoTibrvService → WCFServices → DB
                 await ForwardToMesService(equipmentMessage);
             }
             catch (Exception ex)
@@ -139,7 +139,7 @@ namespace CIMMonitor.Services
                     Properties = parsedMessage
                 };
 
-                // 发送到TibcoTibrvService → WCFServices → ORACLE
+                // 发送到TibcoTibrvService → WCFServices → DB
                 await ForwardToMesService(equipmentMessage);
             }
             catch (Exception ex)
@@ -208,7 +208,7 @@ namespace CIMMonitor.Services
         
         /// <summary>
         /// 将设备消息转发到MES服务
-        /// 数据流向: CIMMonitor → TibcoTibrvService → WCFServices → ORACLE
+        /// 数据流向: CIMMonitor → TibcoTibrvService → WCFServices → DB
         /// </summary>
         private async Task ForwardToMesService(EquipmentMessage equipmentMessage)
         {

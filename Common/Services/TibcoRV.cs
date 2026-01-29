@@ -9,7 +9,7 @@ using TIBCO.Rendezvous;
 
 namespace Common.Services
 {
-    public class TibrvService
+    public class TibcoRV
     {
         #region 字段、属性
         private string _service;                //服务
@@ -45,14 +45,14 @@ namespace Common.Services
         #endregion
 
         #region 构造函数
-        public TibrvService() { }
-        public TibrvService(string server, string network, string daemon)
+        public TibcoRV() { }
+        public TibcoRV(string server, string network, string daemon)
         {
             this.Service = server;
             this.Network = network;
             this.Daemon = daemon;
         }
-        public TibrvService(string server, string network, string daemon, string listenSubject, string targetSubject)
+        public TibcoRV(string server, string network, string daemon, string listenSubject, string targetSubject)
         {
             this.Service = server;
             this.Network = network;

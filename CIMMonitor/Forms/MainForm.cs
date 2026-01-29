@@ -228,11 +228,11 @@ namespace CIMMonitor.Forms
                 var kepServerService = Program.GetService<IKepServerMonitoringService>();
                 var kepServerEventHandler = Program.GetService<KepServerEventHandler>();
                 var hsmsDeviceManager = Program.GetService<HsmsDeviceManager>();
-                var tibrvService = Program.GetService<TibrvService>(); // 新增获取TibrvService实例
+                var tibcoRVService = Program.GetService<TibcoRV>(); // 新增获取TibcoRV实例
                 
-                if (kepServerService != null && kepServerEventHandler != null && hsmsDeviceManager != null && tibrvService != null)
+                if (kepServerService != null && kepServerEventHandler != null && hsmsDeviceManager != null && tibcoRVService != null)
                 {
-                    _dataFlowService = new DataFlowService(kepServerService, kepServerEventHandler, hsmsDeviceManager, tibrvService);
+                    _dataFlowService = new DataFlowService(kepServerService, kepServerEventHandler, hsmsDeviceManager, tibcoRVService);
                     
                     // 启动数据流向服务
                     _ = Task.Run(async () =>
