@@ -12,6 +12,7 @@
     <!-- 代码分析规则 -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

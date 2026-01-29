@@ -1,3 +1,4 @@
+using CoreWCF;
 using System.ServiceModel;
 using WCFServices.Contracts;
 using WCFServices.Database;

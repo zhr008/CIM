@@ -2,6 +2,8 @@ using Common.Services;
 using WCFServices.Database;
 using TIBCO.Rendezvous;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using System.Collections;
 
 namespace WCFServices.Services
 {
@@ -95,7 +97,10 @@ namespace WCFServices.Services
                     _logger.LogError("Failed to open TIBRV environment");
                     return;
                 }
-
+                _tibrvService.messageReceivedHandler += OnMessageReceived;
+                //_tibrvService.ListenedStatusHandler += OnListened;
+                //_tibrvService.ConnectedStatusHandler += OnConnected;
+                //_tibrvService.ErrorMessageHandler += TibcoRVTHelper_ErrorMessageHandler;
                 // Connect to TIBRV
                 _tibrvService.StartConnect();
                 
@@ -125,32 +130,32 @@ namespace WCFServices.Services
         {
             try
             {
-                _logger.LogInformation($"Received message from TIBRV on subject: {e.Msg.Subject}");
-                
+                _logger.LogInformation($"Received message from TIBRV on subject: {e.Message.SendSubject}");
+
                 // Extract the XML content from the message
                 string xmlContent = string.Empty;
-                
-                // Try to find the XML content in the message fields
-                if (e.Msg.Fields.ContainsKey("XMLContent"))
-                {
-                    xmlContent = e.Msg.Fields["XMLContent"].ToString();
-                }
-                else if (e.Msg.Fields.ContainsKey("Data"))
-                {
-                    xmlContent = e.Msg.Fields["Data"].ToString();
-                }
-                else
-                {
-                    // If no specific field found, try to get the first field
-                    foreach (DictionaryEntry field in e.Msg.Fields)
-                    {
-                        if (field.Value is string strVal && strVal.StartsWith("<?xml") || strVal.Contains("<") && strVal.Contains(">"))
-                        {
-                            xmlContent = strVal;
-                            break;
-                        }
-                    }
-                }
+
+                // Try to find the XML content in the message fields --zhr
+                //if (e.Message.Fields.Contains("XMLContent"))
+                //{
+                //    xmlContent = e.Message.Fields["XMLContent"].ToString();
+                //}
+                //else if (e.Message.Fields.Contains("Data"))
+                //{
+                //    xmlContent = e.Message.Fields["Data"].ToString();
+                //}
+                //else
+                //{
+                //    // If no specific field found, try to get the first field
+                //    foreach (DictionaryEntry field in e.Message.Fields)
+                //    {
+                //        if (field.Value is string strVal && (strVal.StartsWith("<?xml") || (strVal.Contains("<") && strVal.Contains(">"))))
+                //        {
+                //            xmlContent = strVal;
+                //            break;
+                //        }
+                //    }
+                //}
 
                 if (!string.IsNullOrEmpty(xmlContent))
                 {
@@ -161,14 +166,14 @@ namespace WCFServices.Services
                         Content = xmlContent,
                         Timestamp = DateTime.UtcNow,
                         MessageType = "XML",
-                        Source = $"TIBRV_{e.Msg.Subject}"
+                        Source = $"TIBRV_{e.Message.SendSubject}"
                     };
 
                     // Process the received XML message
                     _ = Task.Run(async () =>
                     {
                         await ProcessXmlMessageAsync(messageRecord);
-                        
+
                         // Push the received XML message to the WCF service
                         await PushXmlToWcfService(xmlContent);
                     });
@@ -177,7 +182,7 @@ namespace WCFServices.Services
                 }
                 else
                 {
-                    _logger.LogWarning($"Received message from TIBRV but no XML content found in fields: {string.Join(", ", e.Msg.Fields.Keys)}");
+                    _logger.LogWarning($"Received message from TIBRV but no XML content found in fields: {string.Join(", ", e.Message)}");
                 }
             }
             catch (Exception ex)

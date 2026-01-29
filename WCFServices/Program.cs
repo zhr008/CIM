@@ -40,12 +40,9 @@ namespace WCFServices
             }
 
             // Configure the HTTP request pipeline
-            app.UseServiceModel(builder =>
+            ((IApplicationBuilder)app).UseServiceModel(builder =>
             {
-                builder.AddService<WcfServiceImpl>(serviceOptions =>
-                {
-                    serviceOptions.Singleton();
-                });
+                builder.AddService<WcfServiceImpl>();
 
                 builder.AddServiceEndpoint<WcfServiceImpl, IWcfService>(
                     new BasicHttpBinding(),

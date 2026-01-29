@@ -57,21 +57,23 @@ namespace WCFServices.Adapters
         {
             try
             {
-                _logger.LogDebug($"Received Tibrv message on subject: {e.Msg.Subject}");
+                // 修复CS1061: MessageReceivedEventArgs 没有 Msg 属性，应该用 Message
+                // 修复CA2254: 日志消息模板应为常量字符串
+                _logger.LogDebug("Received Tibrv message on subject: {Subject}", e.Message);
 
                 // Extract XML content from the message
-                string xmlContent = ExtractXmlFromTibrvMessage(e.Msg);
+                string xmlContent = ExtractXmlFromTibrvMessage(e.Message);
                 
                 if (!string.IsNullOrEmpty(xmlContent))
                 {
-                    // Log the received message
-                    _logger.LogInformation($"Received XML from Tibrv: {xmlContent.Substring(0, Math.Min(200, xmlContent.Length))}...");
+                    // 日志模板应为常量字符串
+                    _logger.LogInformation("Received XML from Tibrv: {XmlPreview}...", xmlContent.Substring(0, Math.Min(200, xmlContent.Length)));
 
                     // Forward the XML message to the WCF service
                     await ForwardXmlToWcfService(xmlContent);
                     
                     // Optionally save to database
-                    await SaveReceivedMessageToDatabase(xmlContent, e.Msg.Subject);
+                    await SaveReceivedMessageToDatabase(xmlContent, e.Message.ReplySubject);
                 }
                 else
                 {
@@ -80,7 +82,7 @@ namespace WCFServices.Adapters
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error handling Tibrv message: {ex.Message}");
+                _logger.LogError(ex, "Error handling Tibrv message: {Message}", ex.Message);
             }
         }
 
@@ -88,31 +90,62 @@ namespace WCFServices.Adapters
         {
             string xmlContent = string.Empty;
 
-            // Try to find XML content in various possible fields
-            if (message.Fields.Contains("XMLContent"))
+            // 尝试通过 Message 的 GetField/GetXmlAsString 方法获取 XML 内容
+            // 优先查找常见字段名
+            string[] possibleFieldNames = { "XMLContent", "Data", "Message" };
+            foreach (var fieldName in possibleFieldNames)
             {
-                xmlContent = message.Fields["XMLContent"].ToString();
-            }
-            else if (message.Fields.Contains("Data"))
-            {
-                xmlContent = message.Fields["Data"].ToString();
-            }
-            else if (message.Fields.Contains("Message"))
-            {
-                xmlContent = message.Fields["Message"].ToString();
-            }
-            else
-            {
-                // Look for any field that contains XML-like content
-                foreach (System.Collections.DictionaryEntry entry in message.Fields)
+                try
                 {
-                    var value = entry.Value?.ToString();
-                    if (value != null && (value.TrimStart().StartsWith("<") && value.Contains(">")))
+                    var field = message.GetField(fieldName);
+                    if (field != null && field.Value != null)
+                    {
+                        xmlContent = field.Value.ToString();
+                        if (!string.IsNullOrWhiteSpace(xmlContent))
+                            return xmlContent;
+                    }
+                }
+                catch
+                {
+                    // 字段不存在时忽略异常
+                }
+            }
+
+            // 尝试查找 XML 字符串字段
+            for (uint i = 0; i < message.FieldCount; i++)
+            {
+                try
+                {
+                    var field = message.GetFieldByIndex(i);
+                    var value = field?.Value?.ToString();
+                    if (!string.IsNullOrEmpty(value) && value.TrimStart().StartsWith("<") && value.Contains(">"))
                     {
                         xmlContent = value;
                         break;
                     }
                 }
+                catch
+                {
+                    // 忽略异常
+                }
+            }
+
+            // 尝试通过 GetXmlAsString 获取
+            try
+            {
+                for (uint i = 0; i < message.FieldCount; i++)
+                {
+                    var xml = message.GetXmlAsStringByIndex(i);
+                    if (!string.IsNullOrWhiteSpace(xml))
+                    {
+                        xmlContent = xml;
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // 忽略异常
             }
 
             return xmlContent;
