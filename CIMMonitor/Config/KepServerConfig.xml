@@ -1,112 +1,246 @@
-<?xml version="1.0" encoding="utf-8"?>
-<KepServerConfiguration Version="1.0" LastUpdated="2025-10-30">
-  <KepServerSettings>
-    <!-- 连接超时时间: 30秒（从5秒增加到30秒） -->
-    <ConnectionTimeout>30000</ConnectionTimeout>
-    <!-- 重连间隔: 10秒 -->
-    <ReconnectInterval>10000</ReconnectInterval>
-    <!-- 最大重试次数: 3次 -->
-    <MaxRetries>3</MaxRetries>
-    <!-- 默认更新率: 100ms -->
-    <UpdateRate>100</UpdateRate>
-    <!-- 启用日志记录 -->
-    <EnableLogging>true</EnableLogging>
-    <!-- 日志级别: Info -->
-    <LogLevel>Info</LogLevel>
-  </KepServerSettings>
+<?xml version="1.0" encoding="UTF-8"?>
+<Project 
+    xmlns="http://www.kepware.com/schemas/kepserverexproject"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.kepware.com/schemas/kepserverexproject Project.xsd"
+    Version="6.14.0.0"
+    ProjectID="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
+    
+    <!-- 项目元数据 -->
+    <Properties>
+        <Property Name="ProjectName" Value="SmartFactory_EventDriven_Full"/>
+        <Property Name="Description" Value="事件驱动架构-完整工业配置"/>
+        <Property Name="Creator" Value="IndustrialIT_Admin"/>
+        <Property Name="CreateTime" Value="2024-01-22T08:00:00Z"/>
+    </Properties>
 
-  <Servers>
-    <!-- 主KepServer -->
-    <Server ServerId="KepServer_01" ServerName="主KepServer" Host="192.168.1.100" Port="49320" ProtocolType="opc" Description="生产线主服务器" Enabled="true">
-      <Projects>
-        <!-- 生产线项目1 - 光刻生产线 -->
-        <Project ProjectId="ProductionLine_01" ProjectName="生产线项目1" Description="光刻生产线" Enabled="true">
-          <DataGroups>
-            <!-- 设备状态组 -->
-            <DataGroup GroupId="Group_01" GroupName="设备状态组" Enabled="true" UpdateRate="500">
-              <BitAddresses>
-                <BitAddress AddressId="BIT_001" Address="PLC001.STATUS.BIT001" Description="设备1运行状态触发" DataType="Boolean" InitialValue="false" Monitored="true" />
-                <BitAddress AddressId="BIT_002" Address="PLC001.STATUS.BIT002" Description="设备2运行状态触发" DataType="Boolean" InitialValue="false" Monitored="true" />
-                <BitAddress AddressId="BIT_003" Address="PLC001.STATUS.BIT003" Description="报警触发" DataType="Boolean" InitialValue="false" Monitored="true" />
-              </BitAddresses>
-              <WordAddresses>
-                <WordAddress AddressId="WORD_001" Address="PLC001.DATA.WORD001" Description="设备1数据值" DataType="String" InitialValue="" MaxLength="100" />
-                <WordAddress AddressId="WORD_002" Address="PLC001.DATA.WORD002" Description="设备2数据值" DataType="String" InitialValue="" MaxLength="100" />
-                <WordAddress AddressId="WORD_003" Address="PLC001.DATA.WORD003" Description="报警信息" DataType="String" InitialValue="" MaxLength="200" />
-              </WordAddresses>
-              <BitWordMappings>
-                <BitWordMapping MappingId="MAP_001" BitAddressId="BIT_001" WordAddressId="WORD_001" TriggerCondition="RisingEdge" Action="ReadWord" Description="设备1状态触发时读取数据" Enabled="true" />
-                <BitWordMapping MappingId="MAP_002" BitAddressId="BIT_002" WordAddressId="WORD_002" TriggerCondition="RisingEdge" Action="ReadWord" Description="设备2状态触发时读取数据" Enabled="true" />
-                <BitWordMapping MappingId="MAP_003" BitAddressId="BIT_003" WordAddressId="WORD_003" TriggerCondition="BothEdges" Action="ReadWord" Description="报警状态变化时读取信息" Enabled="true" />
-              </BitWordMappings>
-            </DataGroup>
+    <!-- ==================== 通道1：西门子 S7-1500 主生产线 ==================== -->
+    <Channels>
+        <Channel Name="Siemens_Production" Driver="Siemens TCP/IP Ethernet">
+            <Properties>
+                <Property Name="NetworkAdapter" Value="192.168.10.100"/>
+                <Property Name="Protocol" Value="ISO-on-TCP"/>
+                <Property Name="ScanRate" Value="100"/>
+                <Property Name="EnableDiagnostics" Value="True"/>
+            </Properties>
+            
+            <Devices>
+                <Device Name="Assembly_Line_Main" DeviceID="1">
+                    <Properties>
+                        <Property Name="IPAddress" Value="192.168.10.10"/>
+                        <Property Name="PLCModel" Value="S7-1500"/>
+                        <Property Name="Rack" Value="0"/>
+                        <Property Name="Slot" Value="1"/>
+                        <Property Name="EnableAutoDemotion" Value="True"/>
+                    </Properties>
+                    
+                    <!-- ==================== Bit组：主动订阅（高频轮询） ==================== -->
+                    <TagGroups>
+                        <TagGroup Name="Bit">
+                            <Properties>
+                                <Property Name="DefaultUpdateRate" Value="100"/>
+                                <Property Name="Description" Value="主动订阅-事件触发源"/>
+                            </Properties>
+                            
+                            <Tags>
+                                <!-- 系统级触发 -->
+                                <Tag Name="System_Run" Address="DB100.DBX0.0" DataType="BOOLEAN" AccessRights="ReadWrite">
+                                    <Properties>
+                                        <Property Name="Description" Value="系统运行总开关"/>
+                                        <Property Name="ScanRate" Value="100"/>
+                                        <!-- 触发：不关联Word（纯控制信号） -->
+                                    </Properties>
+                                </Tag>
+                                
+                                <Tag Name="Emergency_Stop" Address="DB100.DBX0.1" DataType="BOOLEAN" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="急停按钮触发"/>
+                                        <Property Name="ScanRate" Value="50"/>
+                                        <!-- 触发：读取所有报警相关Word -->
+                                        <Property Name="TriggeredTags" Value="Alarm_Status"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- 电机控制触发 -->
+                                <Tag Name="Motor_Start_CMD" Address="DB100.DBX2.0" DataType="BOOLEAN" AccessRights="ReadWrite">
+                                    <Properties>
+                                        <Property Name="Description" Value="电机启动命令（触发读取电机参数）"/>
+                                        <Property Name="ScanRate" Value="100"/>
+                                        <!-- 触发多个电机相关Word标签 -->
+                                        <Property Name="TriggeredTags" Value="Motor_Current,Motor_Frequency"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <Tag Name="Motor_Run_Status" Address="DB100.DBX2.1" DataType="BOOLEAN" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="电机运行状态（触发记录运行数据）"/>
+                                        <Property Name="ScanRate" Value="100"/>
+                                        <!-- 触发运行数据和计数 -->
+                                        <Property Name="TriggeredTags" Value="Motor_Runtime"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- 模式切换触发 -->
+                                <Tag Name="Auto_Mode" Address="DB100.DBX4.0" DataType="BOOLEAN" AccessRights="ReadWrite">
+                                    <Properties>
+                                        <Property Name="Description" Value="切换自动模式（触发读取参数）"/>
+                                        <Property Name="ScanRate" Value="200"/>
+                                        <!-- 触发读取10个参数数组 -->
+                                        <Property Name="TriggeredTags" Value="Auto_Params"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- 报警触发 -->
+                                <Tag Name="Alarm_OverHeat" Address="DB100.DBX5.0" DataType="BOOLEAN" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="过热报警触发-读取温度数组"/>
+                                        <Property Name="ScanRate" Value="200"/>
+                                        <!-- 触发读取5个温度传感器数组 -->
+                                        <Property Name="TriggeredTags" Value="Temperature_Zones"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- 质量检测触发 -->
+                                <Tag Name="Vision_Trig_OK" Address="DB200.DBX0.0" DataType="BOOLEAN" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="视觉检测OK信号-触发质量数据"/>
+                                        <Property Name="ScanRate" Value="200"/>
+                                        <!-- 触发读取零件数据和尺寸 -->
+                                        <Property Name="TriggeredTags" Value="Part_ID,Dimension_A,Dimension_B"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- 批次完成触发 -->
+                                <Tag Name="Batch_Complete" Address="DB100.DBX6.0" DataType="BOOLEAN" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="批次完成信号-触发读取批次报告"/>
+                                        <Property Name="ScanRate" Value="500"/>
+                                        <!-- 触发读取20个批次统计数据数组 -->
+                                        <Property Name="TriggeredTags" Value="Batch_Report"/>
+                                    </Properties>
+                                </Tag>
+                            </Tags>
+                        </TagGroup>
 
-            <!-- 生产数据组 -->
-            <DataGroup GroupId="Group_02" GroupName="生产数据组" Enabled="true" UpdateRate="1000">
-              <BitAddresses>
-                <BitAddress AddressId="BIT_004" Address="PLC002.STATUS.BIT001" Description="批次开始触发" DataType="Boolean" InitialValue="false" Monitored="true" />
-                <BitAddress AddressId="BIT_005" Address="PLC002.STATUS.BIT002" Description="批次完成触发" DataType="Boolean" InitialValue="false" Monitored="true" />
-              </BitAddresses>
-              <WordAddresses>
-                <WordAddress AddressId="WORD_004" Address="PLC002.DATA.WORD001" Description="当前批次号" DataType="String" InitialValue="" MaxLength="50" />
-                <WordAddress AddressId="WORD_005" Address="PLC002.DATA.WORD002" Description="产品信息" DataType="String" InitialValue="" MaxLength="100" />
-              </WordAddresses>
-              <BitWordMappings>
-                <BitWordMapping MappingId="MAP_004" BitAddressId="BIT_004" WordAddressId="WORD_004" TriggerCondition="RisingEdge" Action="ReadWord" Description="批次开始时记录批次号" Enabled="true" />
-                <BitWordMapping MappingId="MAP_005" BitAddressId="BIT_005" WordAddressId="WORD_005" TriggerCondition="RisingEdge" Action="ReadWord" Description="批次完成时记录产品信息" Enabled="true" />
-              </BitWordMappings>
-            </DataGroup>
-          </DataGroups>
-        </Project>
+                        <!-- ==================== Word组：按需读取（被动模式） ==================== -->
+                        <TagGroup Name="Word">
+                            <Properties>
+                                <Property Name="DefaultUpdateRate" Value="0"/>
+                                <Property Name="Description" Value="按需读取-Bit触发后批量读取"/>
+                                <!-- ScanRate="0" 表示不主动扫描，等待客户端读取 -->
+                            </Properties>
+                            
+                            <Tags>
+                                <!-- ========== 电机参数（受Motor_Start_CMD触发） ========== -->
+                                <Tag Name="Motor_Current" Address="DB102.DBD0" DataType="FLOAT" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="电机电流"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="Units" Value="A"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <Tag Name="Motor_Frequency" Address="DB102.DBD4" DataType="FLOAT" AccessRights="ReadWrite">
+                                    <Properties>
+                                        <Property Name="Description" Value="电机频率设定"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="Units" Value="Hz"/>
+                                    </Properties>
+                                </Tag>
 
-        <!-- 生产线项目2 - 蚀刻生产线 -->
-        <Project ProjectId="ProductionLine_02" ProjectName="生产线项目2" Description="蚀刻生产线" Enabled="true">
-          <DataGroups>
-            <DataGroup GroupId="Group_03" GroupName="设备组" Enabled="true" UpdateRate="500">
-              <BitAddresses>
-                <BitAddress AddressId="BIT_006" Address="ETCH001.STATUS.READY" Description="设备就绪" DataType="Boolean" InitialValue="false" Monitored="true" />
-              </BitAddresses>
-              <WordAddresses>
-                <WordAddress AddressId="WORD_006" Address="ETCH001.DATA.TEMPERATURE" Description="当前温度" DataType="String" InitialValue="" MaxLength="50" />
-              </WordAddresses>
-              <BitWordMappings>
-                <BitWordMapping MappingId="MAP_006" BitAddressId="BIT_006" WordAddressId="WORD_006" TriggerCondition="RisingEdge" Action="ReadWord" Description="设备就绪时读取温度" Enabled="true" />
-              </BitWordMappings>
-            </DataGroup>
-          </DataGroups>
-        </Project>
-      </Projects>
-    </Server>
+                                <!-- ========== 运行数据（受Motor_Run_Status触发） ========== -->
+                                <Tag Name="Motor_Runtime" Address="DB103.DBD0" DataType="DWORD" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="电机累计运行时间"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="Units" Value="小时"/>
+                                        <Property name="ArchiveEnabled" Value="True"/>
+                                        <Property name="ReportEnabled" Value="True"/>
+                                    </Properties>
+                                </Tag>
+								
+                                <!-- ========== 自动模式参数数组（10个参数） ========== -->
+                                <!-- KepServer EX数组配置：Auto_Params[0]到Auto_Params[9] -->
+                                <Tag Name="Auto_Params" Address="DB103.DBW0[10]" DataType="WORD" AccessRights="ReadWrite">
+                                    <Properties>
+                                        <Property Name="Description" Value="自动模式参数数组[0-9]"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="ArrayLength" Value="10"/>
+                                        <Property Name="Scaling" Value="None"/>
+                                    </Properties>
+                                </Tag>
 
-    <!-- 备用KepServer -->
-    <Server ServerId="KepServer_02" ServerName="备用KepServer" Host="192.168.1.101" Port="49320" ProtocolType="opc" Description="生产线备用服务器" Enabled="false">
-      <Projects>
-        <Project ProjectId="Backup_01" ProjectName="备用项目" Description="备用配置" Enabled="false">
-          <DataGroups />
-        </Project>
-      </Projects>
-    </Server>
-  </Servers>
+                                <!-- ========== 温度区域数组（5个传感器） ========== -->
+                                <Tag Name="Temperature_Zones" Address="DB101.DBW10[10]" DataType="WORD" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="5个温度区数组[0-4]"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="ArrayLength" Value="5"/>
+                                        <Property Name="Units" Value="°C"/>
+                                        <Property Name="Scaling" Value="Linear"/>
+                                        <Property Name="RawLow" Value="0"/>
+                                        <Property Name="RawHigh" Value="27648"/>
+                                        <Property Name="ScaledLow" Value="0"/>
+                                        <Property Name="ScaledHigh" Value="600"/>
+                                    </Properties>
+                                </Tag>
 
-  <DataInteraction Enabled="true" Mode="Async" BatchSize="10" BufferSize="1000">
-    <PublishEvents>
-      <PublishEvent EventId="EVENT_001" EventName="设备状态变化" Source="BitAddress" Trigger="RisingEdge" Action="ReadWord" PublishTopic="EQUIPMENT.STATUS.CHANGE" Enabled="true" />
-      <PublishEvent EventId="EVENT_002" EventName="生产数据更新" Source="WordAddress" Trigger="ValueChange" Action="Publish" PublishTopic="PRODUCTION.DATA.UPDATE" Enabled="true" />
-    </PublishEvents>
-    <HistoryLog Enabled="true" RetentionDays="30" FilePath="logs/kepserver_history.log" />
-  </DataInteraction>
+                                <!-- ========== 质量检测数据（受Vision_Trig_OK触发） ========== -->
+                                <Tag Name="Part_ID" Address="DB200.DBW0" DataType="STRING" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="零件ID条码"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="StringLength" Value="50"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <Tag Name="Dimension_A" Address="DB200.DBD100" DataType="FLOAT" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="尺寸A测量值"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="Units" Value="mm"/>
+                                        <Property name="ArchiveEnabled" Value="True"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <Tag Name="Dimension_B" Address="DB200.DBD104" DataType="FLOAT" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="尺寸B测量值"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="Units" Value="mm"/>
+                                    </Properties>
+                                </Tag>
+                                
+                                <!-- ========== 报警与故障数据（受Emergency_Stop触发） ========== -->
+                                <Tag Name="Alarm_Status" Address="DB104.DBW0" DataType="WORD" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value = "报警状态字" />
+                                        <Property Name="ScanRate" Value="0"/>
+                                    </Properties>
+                                </Tag>
 
-  <Alerts Enabled="true">
-    <ConnectionLost Enabled="true" Threshold="3" Action="LogAndNotify" />
-    <DataTimeout Enabled="true" Threshold="30000" Action="Log" />
-    <MappingError Enabled="true" Action="Log" />
-  </Alerts>
+                                <!-- ========== 批次报告数组（20个统计数据） ========== -->
+                                <Tag Name="Batch_Report" Address="DB105.DBW0[40]" DataType="WORD" AccessRights="ReadOnly">
+                                    <Properties>
+                                        <Property Name="Description" Value="批次报告数组[0-19]"/>
+                                        <Property Name="ScanRate" Value="0"/>
+                                        <Property Name="ArrayLength" Value="20"/>
+                                    </Properties>
+                                </Tag>
+                            </Tags>
+                        </TagGroup>
+                    </Devices>
+                </Device>
+            </Devices>
+        </Channel>
+    </Channels>
 
-  <Security>
-    <Encryption Enabled="false" Algorithm="AES256" />
-    <Authentication Enabled="false" Method="None" />
-    <AccessControl Enabled="false">
-      <Users />
-    </AccessControl>
-  </Security>
-</KepServerConfiguration>
+    <!-- C#客户端实现策略 -->
+    <CustomProperties>
+        <Property Name="Client.ReadStrategy" Value="EventDriven"/>
+        <Property Name="Client.BitGroup" Value="Bit"/>
+        <Property Name="Client.WordGroup" Value="Word"/>
+        <Property Name="Client.BitPollInterval" Value="100"/>
+        <Property Name="Client.WordReadBatchSize" Value="20"/>
+    </CustomProperties>
+</Project>
