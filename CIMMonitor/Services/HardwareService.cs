@@ -32,8 +32,14 @@ namespace CIMMonitor.Services
                 // 创建监控服务实例
                 _monitoringService = new KepServerMonitoringService();
 
-                // 加载配置文件
-                var configPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.json");
+                // 尝试加载JSON配置，如果不存在则加载XML配置
+                var jsonConfigPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.json");
+                var xmlConfigPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.xml");
+                
+                string configPath = File.Exists(jsonConfigPath) ? jsonConfigPath : 
+                                  File.Exists(xmlConfigPath) ? xmlConfigPath : 
+                                  jsonConfigPath; // 默认路径
+
                 var initialized = await _monitoringService.InitializeAsync(configPath);
 
                 if (initialized)

@@ -381,10 +381,42 @@ namespace CIMMonitor.Forms
             try
             {
                 cmbServers!.Items.Clear();
-                var servers = Services.HardwareService.GetServers();
-                foreach (var server in servers)
+                
+                // 从KEPServer配置文件加载服务器信息
+                var configPath = Path.Combine(Application.StartupPath, "Config", "KepServerConfig.xml");
+                if (File.Exists(configPath))
                 {
-                    cmbServers.Items.Add(new { server.ServerId, server.ServerName, server.ProtocolType, server.ConnectionStatus });
+                    var xmlContent = File.ReadAllText(configPath);
+                    var doc = XDocument.Parse(xmlContent);
+                    
+                    var channels = doc.Root?.Element("Channels");
+                    if (channels != null)
+                    {
+                        foreach (var channel in channels.Elements("Channel"))
+                        {
+                            var devices = channel.Element("Devices");
+                            if (devices != null)
+                            {
+                                foreach (var device in devices.Elements("Device"))
+                                {
+                                    var serverId = device.Attribute("Name")?.Value ?? "Unknown";
+                                    var serverName = $"KepServer - {channel.Attribute("Name")?.Value ?? "Unknown Channel"} - {device.Attribute("Name")?.Value}";
+                                    var protocolType = channel.Attribute("Driver")?.Value ?? "OPC";
+                                    
+                                    cmbServers.Items.Add(new { 
+                                        ServerId = serverId, 
+                                        ServerName = serverName, 
+                                        ProtocolType = protocolType, 
+                                        ConnectionStatus = "Unknown" 
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    AppendLog($"配置文件不存在: {configPath}");
                 }
 
                 if (cmbServers.Items.Count > 0)

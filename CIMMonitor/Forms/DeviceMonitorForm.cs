@@ -678,35 +678,47 @@ namespace CIMMonitor.Forms
         {
             var xmlContent = File.ReadAllText(configPath);
             var doc = XDocument.Parse(xmlContent);
-            var serversElement = doc.Root?.Element("Servers");
 
+            // 解析KEPServer原生配置结构
+            var channelsElement = doc.Root?.Element("Channels");
             int count = 0;
-            if (serversElement != null)
-            {
-                foreach (var serverElement in serversElement.Elements("Server"))
-                {
-                    var host = serverElement.Attribute("Host")?.Value ?? "";
-                    var deviceInfo = new DeviceInfo
-                    {
-                        ServerId = serverElement.Attribute("ServerId")?.Value ?? "",
-                        ServerName = serverElement.Attribute("ServerName")?.Value ?? "",
-                        ProtocolType = serverElement.Attribute("ProtocolType")?.Value ?? "opc",
-                        DeviceType = host.Contains(".") ? "host" : "EQP",
-                        Host = host,
-                        Port = int.Parse(serverElement.Attribute("Port")?.Value ?? "49320"),
-                        Enabled = bool.Parse(serverElement.Attribute("Enabled")?.Value ?? "true"),
-                        IsOnline = false, // 默认离线，等待实际连接
-                        HeartbeatCount = 0,
-                        ResponseTimeMs = 0,
-                        ConnectionQuality = "",
-                        LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        SourceFile = Path.GetFileName(configPath)
-                    };
 
-                    if (!string.IsNullOrEmpty(deviceInfo.ServerId))
+            if (channelsElement != null)
+            {
+                foreach (var channelElement in channelsElement.Elements("Channel"))
+                {
+                    var devicesElement = channelElement.Element("Devices");
+                    if (devicesElement != null)
                     {
-                        devices.Add(deviceInfo);
-                        count++;
+                        foreach (var deviceElement in devicesElement.Elements("Device"))
+                        {
+                            var properties = deviceElement.Element("Properties");
+                            var ipAddressProp = properties?.Elements("Property")
+                                .FirstOrDefault(p => p.Attribute("Name")?.Value == "IPAddress");
+                            
+                            var deviceInfo = new DeviceInfo
+                            {
+                                ServerId = deviceElement.Attribute("Name")?.Value ?? "", // 使用设备名称作为ID
+                                ServerName = $"KepServer - {channelElement.Attribute("Name")?.Value ?? "Unknown Channel"} - {deviceElement.Attribute("Name")?.Value ?? "Unknown Device"}",
+                                ProtocolType = channelElement.Attribute("Driver")?.Value ?? "OPC",
+                                DeviceType = "EQP", // KepServer通常作为设备端点
+                                Host = ipAddressProp?.Attribute("Value")?.Value ?? "localhost",
+                                Port = 49320, // KepServer默认端口
+                                Enabled = true, // 从KEPServer配置中获取设备状态
+                                IsOnline = false, // 默认离线，等待实际连接
+                                HeartbeatCount = 0,
+                                ResponseTimeMs = 0,
+                                ConnectionQuality = "",
+                                LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                SourceFile = Path.GetFileName(configPath)
+                            };
+
+                            if (!string.IsNullOrEmpty(deviceInfo.ServerId))
+                            {
+                                devices.Add(deviceInfo);
+                                count++;
+                            }
+                        }
                     }
                 }
             }
@@ -857,35 +869,47 @@ namespace CIMMonitor.Forms
         {
             var xmlContent = File.ReadAllText(configPath);
             var doc = XDocument.Parse(xmlContent);
-            var serversElement = doc.Root?.Element("Servers");
 
+            // 解析KEPServer原生配置结构
+            var channelsElement = doc.Root?.Element("Channels");
             int count = 0;
-            if (serversElement != null)
-            {
-                foreach (var serverElement in serversElement.Elements("Server"))
-                {
-                    var host = serverElement.Attribute("Host")?.Value ?? "";
-                    var deviceInfo = new DeviceInfo
-                    {
-                        ServerId = serverElement.Attribute("ServerId")?.Value ?? "",
-                        ServerName = serverElement.Attribute("ServerName")?.Value ?? "",
-                        ProtocolType = serverElement.Attribute("ProtocolType")?.Value ?? "opc",
-                        DeviceType = host.Contains(".") ? "host" : "EQP",
-                        Host = host,
-                        Port = int.Parse(serverElement.Attribute("Port")?.Value ?? "49320"),
-                        Enabled = bool.Parse(serverElement.Attribute("Enabled")?.Value ?? "true"),
-                        IsOnline = false, // 稍后会从connectedDevices恢复
-                        HeartbeatCount = 0,
-                        ResponseTimeMs = 0,
-                        ConnectionQuality = "",
-                        LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        SourceFile = Path.GetFileName(configPath)
-                    };
 
-                    if (!string.IsNullOrEmpty(deviceInfo.ServerId))
+            if (channelsElement != null)
+            {
+                foreach (var channelElement in channelsElement.Elements("Channel"))
+                {
+                    var devicesElement = channelElement.Element("Devices");
+                    if (devicesElement != null)
                     {
-                        newDevicesList.Add(deviceInfo);
-                        count++;
+                        foreach (var deviceElement in devicesElement.Elements("Device"))
+                        {
+                            var properties = deviceElement.Element("Properties");
+                            var ipAddressProp = properties?.Elements("Property")
+                                .FirstOrDefault(p => p.Attribute("Name")?.Value == "IPAddress");
+                            
+                            var deviceInfo = new DeviceInfo
+                            {
+                                ServerId = deviceElement.Attribute("Name")?.Value ?? "", // 使用设备名称作为ID
+                                ServerName = $"KepServer - {channelElement.Attribute("Name")?.Value ?? "Unknown Channel"} - {deviceElement.Attribute("Name")?.Value ?? "Unknown Device"}",
+                                ProtocolType = channelElement.Attribute("Driver")?.Value ?? "OPC",
+                                DeviceType = "EQP", // KepServer通常作为设备端点
+                                Host = ipAddressProp?.Attribute("Value")?.Value ?? "localhost",
+                                Port = 49320, // KepServer默认端口
+                                Enabled = true, // 从KEPServer配置中获取设备状态
+                                IsOnline = false, // 稍后会从connectedDevices恢复
+                                HeartbeatCount = 0,
+                                ResponseTimeMs = 0,
+                                ConnectionQuality = "",
+                                LastUpdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                SourceFile = Path.GetFileName(configPath)
+                            };
+
+                            if (!string.IsNullOrEmpty(deviceInfo.ServerId))
+                            {
+                                newDevicesList.Add(deviceInfo);
+                                count++;
+                            }
+                        }
                     }
                 }
             }
