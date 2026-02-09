@@ -163,7 +163,7 @@ namespace CIMMonitor.Forms
             AppendLog($"设备ID: {_deviceInfo.ServerId}");
             AppendLog($"协议类型: {_deviceInfo.ProtocolType}");
             AppendLog($"IP地址: {_deviceInfo.Host}:{_deviceInfo.Port}");
-            AppendLog($"当前状态: {_deviceInfo.IsOnline ? "在线" : "离线"}");
+            AppendLog($"当前状态: {(_deviceInfo.IsOnline ? "在线" : "离线")}");
             AppendLog("");
             
             // 开始心跳定时器
@@ -234,8 +234,10 @@ namespace CIMMonitor.Forms
 
         private void StartHeartbeatTimer()
         {
-            var heartbeatTimer = new Timer();
-            heartbeatTimer.Interval = 5000; // 每5秒更新一次
+            var heartbeatTimer = new System.Windows.Forms.Timer
+            {
+                Interval = 5000 // 每5秒更新一次
+            };
             heartbeatTimer.Tick += (sender, e) =>
             {
                 // 更新设备状态信息

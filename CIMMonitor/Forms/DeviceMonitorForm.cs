@@ -114,7 +114,7 @@ namespace CIMMonitor.Forms
         /// <summary>
         /// 设备信息模型
         /// </summary>
-        private class DeviceInfo
+        public class DeviceInfo
         {
             public string ServerId { get; set; } = "";
             public string ServerName { get; set; } = "";

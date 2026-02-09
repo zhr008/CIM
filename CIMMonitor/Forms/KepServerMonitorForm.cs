@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace CIMMonitor.Forms
 {
     public partial class KepServerMonitorForm : Form
