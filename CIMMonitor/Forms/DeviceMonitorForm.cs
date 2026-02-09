@@ -27,6 +27,11 @@ namespace CIMMonitor.Forms
         private List<DeviceInfo> devices = new List<DeviceInfo>();
 
         /// <summary>
+        /// 存储打开的设备详情窗体
+        /// </summary>
+        private Dictionary<string, DeviceDetailForm> _openDetailForms = new Dictionary<string, DeviceDetailForm>();
+
+        /// <summary>
         /// HSMS设备管理器
         /// </summary>
         private Services.HsmsDeviceManager? _deviceManager;
@@ -713,9 +718,10 @@ namespace CIMMonitor.Forms
                                 SourceFile = Path.GetFileName(configPath)
                             };
 
-                            if (!string.IsNullOrEmpty(deviceInfo.ServerId))
+                            if (!string.IsNullOrEmpty(deviceInfo.ServerId) && !_addedDeviceIds.Contains(deviceInfo.ServerId))
                             {
                                 devices.Add(deviceInfo);
+                                _addedDeviceIds.Add(deviceInfo.ServerId); // 添加到已添加设备ID集合
                                 count++;
                             }
                         }
@@ -906,8 +912,12 @@ namespace CIMMonitor.Forms
 
                             if (!string.IsNullOrEmpty(deviceInfo.ServerId))
                             {
-                                newDevicesList.Add(deviceInfo);
-                                count++;
+                                // 检查是否已存在相同的设备ID，避免重复添加
+                                if (!newDevicesList.Any(d => d.ServerId == deviceInfo.ServerId))
+                                {
+                                    newDevicesList.Add(deviceInfo);
+                                    count++;
+                                }
                             }
                         }
                     }

@@ -1,33 +1,37 @@
 ```
 # Build artifacts
+bin/
+obj/
 *.exe
 *.dll
 *.pdb
-bin/
-obj/
-Debug/
-Release/
+*.userprefs
 
 # Dependencies
 packages/
-node_modules/
-vendor/
 
 # Logs
 *.log
+
+# User-specific files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+desktop.ini
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-*.userprefs
-*.user
-
-# OS
-.DS_Store
-Thumbs.db
+# Testing
+TestResults/
 ```

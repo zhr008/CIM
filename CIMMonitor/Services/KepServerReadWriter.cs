@@ -69,6 +69,7 @@ namespace CIMMonitor.Services
         /// </summary>
         private async Task ProcessDeviceTags(XElement deviceElement)
         {
+            var deviceName = deviceElement.Attribute("Name")?.Value;
             var tagGroups = deviceElement.Element("TagGroups");
             if (tagGroups != null)
             {
@@ -81,7 +82,7 @@ namespace CIMMonitor.Services
                     {
                         foreach (var tag in tags.Elements("Tag"))
                         {
-                            await ProcessSingleTag(tag, groupName);
+                            await ProcessSingleTag(tag, groupName, deviceName);
                         }
                     }
                 }
@@ -91,7 +92,7 @@ namespace CIMMonitor.Services
         /// <summary>
         /// 处理单个标签，建立触发关系
         /// </summary>
-        private async Task ProcessSingleTag(XElement tagElement, string groupName)
+        private async Task ProcessSingleTag(XElement tagElement, string groupName, string deviceName = "")
         {
             var tagName = tagElement.Attribute("Name")?.Value;
             var address = tagElement.Attribute("Address")?.Value;
@@ -128,7 +129,7 @@ namespace CIMMonitor.Services
                     var triggeredTags = triggeredTagsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     foreach (var triggeredTag in triggeredTags)
                     {
-                        var triggerKey = $"{deviceElement.Attribute("Name")?.Value}_{tagName}";
+                        var triggerKey = $"{deviceName}_{tagName}";
                         if (!_bitTriggers.ContainsKey(triggerKey))
                         {
                             _bitTriggers[triggerKey] = new List<TriggeredTag>();
