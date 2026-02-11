@@ -29,7 +29,7 @@
     <Device Type="HSMS" ID="EQP_DEVICE_001" Name="EQP设备测试 (服务端模式)" Enabled="true">
       <Connection>
         <!-- 使用非IP地址表示EQP类型 -->
-        <Host>EQP_MACHINE_01</Host>
+        <Host>127.0.0.1</Host>
         <Port>5001</Port>
       </Connection>
       <SecsSettings>

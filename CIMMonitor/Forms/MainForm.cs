@@ -24,24 +24,39 @@ namespace CIMMonitor.Forms
 
         private void InitializeComponent()
         {
-            this.SuspendLayout();
-            this.WindowState = FormWindowState.Maximized;
-            this.Text = "CIM Monitor - 工业自动化监控中心 v2.0";
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.ResumeLayout(false);
-
-            // 创建主TabControl
             mainTabControl = new TabControl();
+            tabPageWelcome = new TabPage();
+            mainTabControl.SuspendLayout();
+            SuspendLayout();
+            // 
+            // mainTabControl
+            // 
+            mainTabControl.Controls.Add(tabPageWelcome);
             mainTabControl.Dock = DockStyle.Fill;
-            mainTabControl.Font = new System.Drawing.Font("Microsoft YaHei", 9F);
-            this.Controls.Add(mainTabControl);
-
-            // 创建欢迎页
-            tabPageWelcome = new TabPage("欢迎");
-            tabPageWelcome.Controls.Add(CreateWelcomePanel());
-            mainTabControl.TabPages.Add(tabPageWelcome);
-
-            // 初始化各个功能页面（延迟加载）
+            mainTabControl.Font = new Font("微软雅黑", 9F);
+            mainTabControl.Location = new Point(0, 0);
+            mainTabControl.Name = "mainTabControl";
+            mainTabControl.SelectedIndex = 0;
+            mainTabControl.Size = new Size(904, 641);
+            mainTabControl.TabIndex = 0;
+            // 
+            // tabPageWelcome
+            // 
+            tabPageWelcome.Location = new Point(4, 26);
+            tabPageWelcome.Name = "tabPageWelcome";
+            tabPageWelcome.Size = new Size(896, 611);
+            tabPageWelcome.TabIndex = 0;
+            tabPageWelcome.Text = "欢迎";
+            // 
+            // MainForm
+            // 
+            ClientSize = new Size(904, 641);
+            Controls.Add(mainTabControl);
+            Name = "MainForm";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "CIM Monitor - 工业自动化监控中心 v2.0";
+            mainTabControl.ResumeLayout(false);
+            ResumeLayout(false);
             InitializeTabPages();
         }
 
@@ -87,25 +102,7 @@ namespace CIMMonitor.Forms
             tabPageDevice = new TabPage("设备监控");
             mainTabControl.TabPages.Add(tabPageDevice);
 
-            // KepServer监控页
-            tabPageKepServer = new TabPage("KepServer监控");
-            mainTabControl.TabPages.Add(tabPageKepServer);
-
-            // 硬件监控页
-            tabPageHardware = new TabPage("硬件监控");
-            mainTabControl.TabPages.Add(tabPageHardware);
-
-            // 生产数据页
-            tabPageProduction = new TabPage("生产数据");
-            mainTabControl.TabPages.Add(tabPageProduction);
-
-            // 报警管理页
-            tabPageAlarm = new TabPage("报警管理");
-            mainTabControl.TabPages.Add(tabPageAlarm);
-
-            // TIBCO消息页
-            tabPageTibco = new TabPage("TIBCO消息");
-            mainTabControl.TabPages.Add(tabPageTibco);
+            
 
             // 绑定TabControl事件
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
