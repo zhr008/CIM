@@ -1,6 +1,5 @@
 using System.Windows.Forms;
 using CIMMonitor.Services;
-using CIMMonitor.Models.KepServer;
 using Common.Services;
 
 namespace CIMMonitor.Forms
@@ -16,11 +15,7 @@ namespace CIMMonitor.Forms
         private TabPage? tabPageProduction;
         private TabPage? tabPageAlarm;
         private TabPage? tabPageTibco;
-        private DeviceMonitorForm? deviceMonitorForm;
-        private KepServerMonitorForm? kepServerMonitorForm;
-        private HardwareMonitorForm? hardwareMonitorForm;
-        private ProductionDataForm? productionDataForm;
-        private AlarmManagerForm? alarmManagerForm;
+        private Monitor? deviceMonitorForm;
         
         // 新增数据流向服务
         private DataFlowService? _dataFlowService;
@@ -134,22 +129,6 @@ namespace CIMMonitor.Forms
             {
                 LoadDeviceMonitor();
             }
-            else if (mainTabControl.SelectedTab == tabPageKepServer && kepServerMonitorForm == null)
-            {
-                LoadKepServerMonitor();
-            }
-            else if (mainTabControl.SelectedTab == tabPageHardware && hardwareMonitorForm == null)
-            {
-                LoadHardwareMonitor();
-            }
-            else if (mainTabControl.SelectedTab == tabPageProduction && productionDataForm == null)
-            {
-                LoadProductionData();
-            }
-            else if (mainTabControl.SelectedTab == tabPageAlarm && alarmManagerForm == null)
-            {
-                LoadAlarmManager();
-            }
         }
 
         // 延迟加载各个功能模块
@@ -157,7 +136,7 @@ namespace CIMMonitor.Forms
         {
             if (deviceMonitorForm != null) return;
 
-            deviceMonitorForm = new DeviceMonitorForm();
+            deviceMonitorForm = new Monitor();
             deviceMonitorForm.TopLevel = false;
             deviceMonitorForm.FormBorderStyle = FormBorderStyle.None;
             deviceMonitorForm.Dock = DockStyle.Fill;
@@ -166,58 +145,6 @@ namespace CIMMonitor.Forms
             deviceMonitorForm.Show();
         }
 
-        private void LoadKepServerMonitor()
-        {
-            if (kepServerMonitorForm != null) return;
-
-            kepServerMonitorForm = new KepServerMonitorForm();
-            kepServerMonitorForm.TopLevel = false;
-            kepServerMonitorForm.FormBorderStyle = FormBorderStyle.None;
-            kepServerMonitorForm.Dock = DockStyle.Fill;
-
-            tabPageKepServer.Controls.Add(kepServerMonitorForm);
-            kepServerMonitorForm.Show();
-        }
-
-        private void LoadHardwareMonitor()
-        {
-            if (hardwareMonitorForm != null) return;
-
-            hardwareMonitorForm = new HardwareMonitorForm();
-            hardwareMonitorForm.TopLevel = false;
-            hardwareMonitorForm.FormBorderStyle = FormBorderStyle.None;
-            hardwareMonitorForm.Dock = DockStyle.Fill;
-
-            tabPageHardware.Controls.Add(hardwareMonitorForm);
-            hardwareMonitorForm.Show();
-        }
-
-        private void LoadProductionData()
-        {
-            if (productionDataForm != null) return;
-
-            productionDataForm = new ProductionDataForm();
-            productionDataForm.TopLevel = false;
-            productionDataForm.FormBorderStyle = FormBorderStyle.None;
-            productionDataForm.Dock = DockStyle.Fill;
-
-            tabPageProduction.Controls.Add(productionDataForm);
-            productionDataForm.Show();
-        }
-
-        private void LoadAlarmManager()
-        {
-            if (alarmManagerForm != null) return;
-
-            alarmManagerForm = new AlarmManagerForm();
-            alarmManagerForm.TopLevel = false;
-            alarmManagerForm.FormBorderStyle = FormBorderStyle.None;
-            alarmManagerForm.Dock = DockStyle.Fill;
-
-            tabPageAlarm.Controls.Add(alarmManagerForm);
-            alarmManagerForm.Show();
-        }
-        
         /// <summary>
         /// 初始化数据流向服务
         /// </summary>
@@ -293,49 +220,6 @@ namespace CIMMonitor.Forms
             mainTabControl.SelectedTab = tabPageDevice;
         }
 
-        private void ShowMonitor()
-        {
-            LoadKepServerMonitor();
-            mainTabControl.SelectedTab = tabPageKepServer;
-        }
-
-        private void ShowHardwareMonitor()
-        {
-            LoadHardwareMonitor();
-            mainTabControl.SelectedTab = tabPageHardware;
-        }
-
-        private void ShowProductionData()
-        {
-            LoadProductionData();
-            mainTabControl.SelectedTab = tabPageProduction;
-        }
-
-        private void ShowProductionOrder()
-        {
-            // 生产订单使用独立窗口
-            var form = new ProductionOrderForm();
-            form.ShowDialog();
-        }
-
-        private void ShowAlarmManager()
-        {
-            LoadAlarmManager();
-            mainTabControl.SelectedTab = tabPageAlarm;
-        }
-
-        private void ShowConfig()
-        {
-            var form = new ConfigForm();
-            form.ShowDialog();
-        }
-
-        private void ShowDatabaseConfig()
-        {
-            var form = new DatabaseConfigForm();
-            form.ShowDialog();
-        }
-
         private void ShowLogViewer()
         {
             var form = new LogViewerForm();
@@ -394,25 +278,13 @@ namespace CIMMonitor.Forms
 
             // 监控菜单
             var monitorMenu = new ToolStripMenuItem("监控(&M)");
-            var kepserverItem = new ToolStripMenuItem("KepServer监控(&K)", null, (s, e) => ShowMonitor());
             var deviceItem = new ToolStripMenuItem("设备监控(&D)", null, (s, e) => ShowDeviceMonitor());
-            var hardwareItem = new ToolStripMenuItem("硬件监控(&H)", null, (s, e) => ShowHardwareMonitor());
-            var productionItem = new ToolStripMenuItem("生产数据(&P)", null, (s, e) => ShowProductionData());
-            var alarmItem = new ToolStripMenuItem("报警管理(&A)", null, (s, e) => ShowAlarmManager());
-            monitorMenu.DropDownItems.Add(kepserverItem);
             monitorMenu.DropDownItems.Add(deviceItem);
-            monitorMenu.DropDownItems.Add(hardwareItem);
-            monitorMenu.DropDownItems.Add(productionItem);
-            monitorMenu.DropDownItems.Add(alarmItem);
             menuStrip.Items.Add(monitorMenu);
 
             // 系统管理菜单
             var adminMenu = new ToolStripMenuItem("系统管理(&A)");
-            var configItem = new ToolStripMenuItem("系统配置(&C)", null, (s, e) => ShowConfig());
-            var dbConfigItem = new ToolStripMenuItem("数据库配置(&D)", null, (s, e) => ShowDatabaseConfig());
             var logItem = new ToolStripMenuItem("日志查看(&L)", null, (s, e) => ShowLogViewer());
-            adminMenu.DropDownItems.Add(configItem);
-            adminMenu.DropDownItems.Add(dbConfigItem);
             adminMenu.DropDownItems.Add(new ToolStripSeparator());
             adminMenu.DropDownItems.Add(logItem);
             menuStrip.Items.Add(adminMenu);

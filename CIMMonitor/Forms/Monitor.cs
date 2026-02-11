@@ -10,7 +10,7 @@ using CIMMonitor.Models;
 
 namespace CIMMonitor.Forms
 {
-    public partial class DeviceMonitorForm : Form
+    public partial class Monitor : Form
     {
         private DataGridView? dgvDevices;
         private Button? btnRefresh;
@@ -29,7 +29,7 @@ namespace CIMMonitor.Forms
         /// <summary>
         /// 存储打开的设备详情窗体
         /// </summary>
-        private Dictionary<string, DeviceDetailForm> _openDetailForms = new Dictionary<string, DeviceDetailForm>();
+        private Dictionary<string, MonitorDetail> _openDetailForms = new Dictionary<string, MonitorDetail>();
 
         /// <summary>
         /// HSMS设备管理器
@@ -59,7 +59,7 @@ namespace CIMMonitor.Forms
         /// </summary>
         private bool _isDevicesLoaded = false;
 
-        public DeviceMonitorForm()
+        public Monitor()
         {
             InitializeComponent();
 

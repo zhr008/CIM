@@ -14,6 +14,7 @@ namespace CIMMonitor.Models
     {
         HSMS,
         OPC,
+        OPC_DA,
         OPC_UA,
         Unknown
     }
