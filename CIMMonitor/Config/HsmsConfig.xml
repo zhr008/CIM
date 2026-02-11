@@ -26,7 +26,7 @@
       EQP设备测试 - CIMMonitor作为服务端
       CIMMonitor启动监听端口，等待HsmsSimulator客户端连接
     -->
-    <Device Type="HSMS" Id="EQP_DEVICE_001" Name="EQP设备测试 (服务端模式)" Enabled="true">
+    <Device Type="HSMS" ID="EQP_DEVICE_001" Name="EQP设备测试 (服务端模式)" Enabled="true">
       <Connection>
         <!-- 使用非IP地址表示EQP类型 -->
         <Host>EQP_MACHINE_01</Host>

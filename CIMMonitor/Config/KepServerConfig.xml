@@ -25,7 +25,7 @@
             </Properties>
             
             <Devices>
-                <Device Name="Assembly_Line_Main" DeviceID="1">
+                <Device Type="OPC" ID="PLC_DEVICE_001" Name="Assembly_Line_Main" Enabled="false">
                     <Properties>
                         <Property Name="IPAddress" Value="192.168.10.10"/>
                         <Property Name="PLCModel" Value="S7-1500"/>
@@ -229,9 +229,10 @@
                                 </Tag>
                             </Tags>
                         </TagGroup>
-					</TagGroups>
-			    </Device>
-           </Devices>
+											
+                    </TagGroups>
+                </Device>
+            </Devices>
         </Channel>
     </Channels>
 

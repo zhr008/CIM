@@ -4,13 +4,13 @@ using System.Windows.Forms;
 
 namespace CIMMonitor.Forms
 {
-    public partial class DeviceDetailForm : Form
+    public partial class MonitorDetail : Form
     {
-        private readonly DeviceMonitorForm.DeviceInfo _deviceInfo;
+        private readonly Monitor.DeviceInfo _deviceInfo;
         private TextBox txtLog;
         private Label lblTitle;
 
-        public DeviceDetailForm(DeviceMonitorForm.DeviceInfo deviceInfo)
+        public MonitorDetail(Monitor.DeviceInfo deviceInfo)
         {
             _deviceInfo = deviceInfo;
             InitializeComponent();
@@ -18,15 +18,6 @@ namespace CIMMonitor.Forms
             LoadDeviceDetails();
         }
 
-        private void InitializeComponent()
-        {
-            this.Size = new Size(800, 600);
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.Text = $"设备详情 - {_deviceInfo.ServerName}";
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
-            this.MinimizeBox = true;
-        }
 
         private void InitializeCustomComponents()
         {
@@ -73,6 +64,7 @@ namespace CIMMonitor.Forms
             // 设备详情面板
             var panel = new Panel
             {
+                Name = "detailsPanel", // 添加名称便于查找
                 Location = new Point(20, 60),
                 Size = new Size(750, 160),
                 BorderStyle = BorderStyle.FixedSingle
@@ -128,6 +120,10 @@ namespace CIMMonitor.Forms
 
             // 连接质量
             AddDetailRow(panel, "连接质量:", _deviceInfo.ConnectionQuality, 10, yPos, labelWidth, valueWidth, lineHeight);
+            
+            // 配置文件来源
+            yPos += lineHeight + spacing;
+            AddDetailRow(panel, "配置文件:", _deviceInfo.SourceFile, 10, yPos, labelWidth, valueWidth, lineHeight);
         }
 
         private void AddDetailRow(Control parent, string labelText, string valueText, int x, int y, int labelWidth, int valueWidth, int height)
@@ -190,7 +186,7 @@ namespace CIMMonitor.Forms
             }
         }
 
-        public void UpdateDeviceStatus(DeviceMonitorForm.DeviceInfo updatedDeviceInfo)
+        public void UpdateDeviceStatus(Monitor.DeviceInfo updatedDeviceInfo)
         {
             if (this.InvokeRequired)
             {
