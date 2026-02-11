@@ -1021,6 +1021,46 @@ namespace CIMMonitor.Forms
             }
         }
 
+        private void DgvDevices_DoubleClick(object? sender, EventArgs e)
+        {
+            if (dgvDevices!.SelectedRows.Count > 0)
+            {
+                int rowIndex = dgvDevices.SelectedRows[0].Index;
+                if (rowIndex >= 0 && rowIndex < devices.Count)
+                {
+                    var deviceInfo = devices[rowIndex];
+                    
+                    // 检查是否已经打开了该设备的详情窗口
+                    string formKey = deviceInfo.ServerId;
+                    if (_openDetailForms.ContainsKey(formKey))
+                    {
+                        // 如果窗口已存在，激活它
+                        _openDetailForms[formKey].Activate();
+                    }
+                    else
+                    {
+                        // 创建新的详情窗口
+                        var detailForm = new MonitorDetail(deviceInfo);
+                        
+                        // 保存窗口引用以便后续管理
+                        _openDetailForms[formKey] = detailForm;
+                        
+                        // 当窗口关闭时，从字典中移除引用
+                        detailForm.FormClosed += (s, args) =>
+                        {
+                            if (_openDetailForms.ContainsKey(formKey))
+                            {
+                                _openDetailForms.Remove(formKey);
+                            }
+                        };
+                        
+                        // 显示窗口
+                        detailForm.Show();
+                    }
+                }
+            }
+        }
+
         private void BtnRefresh_Click(object? sender, EventArgs e)
         {
             LoadDevices();
