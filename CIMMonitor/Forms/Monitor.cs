@@ -12,17 +12,7 @@ namespace CIMMonitor.Forms
 {
     public partial class Monitor : Form
     {
-        private DataGridView? dgvDevices;
-        private Button? btnRefresh;
-        private Button? btnStart;
-        private Button? btnStop;
-        private Button? btnRestart;
-        private Button? btnClearLog;
-        private Button? btnConnect;
-        private Button? btnDisconnect;
         private System.Windows.Forms.Timer? refreshTimer;
-        private Label lblInfo;
-        private TextBox txtInfo;
         private int selectedDeviceId = 0;
         private List<DeviceInfo> devices = new List<DeviceInfo>();
 
@@ -35,19 +25,6 @@ namespace CIMMonitor.Forms
         /// HSMS设备管理器
         /// </summary>
         private Services.HsmsDeviceManager? _deviceManager;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
-        private DataGridViewCheckBoxColumn dataGridViewCheckBoxColumn8;  // 改为CheckBox
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn9;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn10;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn11;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private Button btnTestMessage;
 
         /// <summary>
         /// 已添加的设备ID集合（避免重复添加）
@@ -169,233 +146,6 @@ namespace CIMMonitor.Forms
             return 0x1234;
         }
 
-        private void InitializeComponent()
-        {
-            dgvDevices = new DataGridView();
-            btnRefresh = new Button();
-            btnStart = new Button();
-            btnStop = new Button();
-            btnRestart = new Button();
-            btnClearLog = new Button();
-            btnConnect = new Button();
-            btnDisconnect = new Button();
-            lblInfo = new Label();
-            txtInfo = new TextBox();
-            btnTestMessage = new Button();
-            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn5 = new DataGridViewTextBoxColumn();
-            dataGridViewCheckBoxColumn8 = new DataGridViewCheckBoxColumn();  // CheckBox列
-            dataGridViewTextBoxColumn9 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn10 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn11 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn12 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            ((System.ComponentModel.ISupportInitialize)dgvDevices).BeginInit();
-            SuspendLayout();
-            // 
-            // dgvDevices
-            // 
-            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1 });
-            dgvDevices.Location = new Point(18, 21);
-            dgvDevices.Name = "dgvDevices";
-            dgvDevices.ReadOnly = false;  // 允许编辑CheckBox列
-            dgvDevices.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvDevices.Size = new Size(1225, 312);
-            dgvDevices.TabIndex = 0;
-            dgvDevices.SelectionChanged += DgvDevices_SelectionChanged;
-            // 
-            // btnRefresh
-            // 
-            btnRefresh.Location = new Point(17, 350);
-            btnRefresh.Name = "btnRefresh";
-            btnRefresh.Size = new Size(105, 37);
-            btnRefresh.TabIndex = 1;
-            btnRefresh.Text = "刷新数据";
-            btnRefresh.Click += BtnRefresh_Click;
-            // 
-            // btnStart
-            // 
-            btnStart.Location = new Point(139, 350);
-            btnStart.Name = "btnStart";
-            btnStart.Size = new Size(105, 37);
-            btnStart.TabIndex = 2;
-            btnStart.Text = "启动监控";
-            btnStart.Click += BtnStart_Click;
-            // 
-            // btnStop
-            // 
-            btnStop.Location = new Point(261, 350);
-            btnStop.Name = "btnStop";
-            btnStop.Size = new Size(105, 37);
-            btnStop.TabIndex = 3;
-            btnStop.Text = "停止监控";
-            btnStop.Click += BtnStop_Click;
-            // 
-            // btnRestart
-            // 
-            btnRestart.Location = new Point(384, 350);
-            btnRestart.Name = "btnRestart";
-            btnRestart.Size = new Size(105, 37);
-            btnRestart.TabIndex = 4;
-            btnRestart.Text = "重启监控";
-            btnRestart.Click += BtnRestart_Click;
-            // 
-            // btnClearLog
-            // 
-            btnClearLog.Location = new Point(507, 350);
-            btnClearLog.Name = "btnClearLog";
-            btnClearLog.Size = new Size(105, 37);
-            btnClearLog.TabIndex = 5;
-            btnClearLog.Text = "清理日志";
-            btnClearLog.Click += BtnClearLog_Click;
-            // 
-            // btnConnect
-            // 
-            btnConnect.Location = new Point(630, 350);
-            btnConnect.Name = "btnConnect";
-            btnConnect.Size = new Size(105, 37);
-            btnConnect.TabIndex = 6;
-            btnConnect.Text = "连接设备";
-            btnConnect.UseVisualStyleBackColor = true;
-            btnConnect.Click += BtnConnect_Click;
-            // 
-            // btnDisconnect
-            // 
-            btnDisconnect.Location = new Point(753, 350);
-            btnDisconnect.Name = "btnDisconnect";
-            btnDisconnect.Size = new Size(105, 37);
-            btnDisconnect.TabIndex = 7;
-            btnDisconnect.Text = "断开设备";
-            btnDisconnect.UseVisualStyleBackColor = true;
-            btnDisconnect.Click += BtnDisconnect_Click;
-            // 
-            // lblInfo
-            // 
-            lblInfo.AutoSize = true;
-            lblInfo.Location = new Point(1012, 360);
-            lblInfo.Name = "lblInfo";
-            lblInfo.Size = new Size(0, 17);
-            lblInfo.TabIndex = 8;
-            // 
-            // txtInfo
-            // 
-            txtInfo.Location = new Point(18, 393);
-            txtInfo.Multiline = true;
-            txtInfo.Name = "txtInfo";
-            txtInfo.ScrollBars = ScrollBars.Vertical;
-            txtInfo.Size = new Size(1226, 393);
-            txtInfo.TabIndex = 9;
-            txtInfo.Text = "设备监控已启动，等待HSMS/OPC消息...";
-            // 
-            // btnTestMessage
-            // 
-            btnTestMessage.Location = new Point(876, 350);
-            btnTestMessage.Name = "btnTestMessage";
-            btnTestMessage.Size = new Size(120, 37);
-            btnTestMessage.TabIndex = 10;
-            btnTestMessage.Text = "测试消息";
-            btnTestMessage.UseVisualStyleBackColor = true;
-            btnTestMessage.Click += BtnTestMessage_Click;
-            //
-            // dataGridViewTextBoxColumn3
-            //
-            dataGridViewTextBoxColumn3.HeaderText = "设备ID";
-            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            dataGridViewTextBoxColumn3.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn4
-            //
-            dataGridViewTextBoxColumn4.HeaderText = "设备名称";
-            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
-            dataGridViewTextBoxColumn4.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn2
-            //
-            dataGridViewTextBoxColumn2.HeaderText = "协议类型";
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn5
-            //
-            dataGridViewTextBoxColumn5.HeaderText = "设备类型";
-            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
-            dataGridViewTextBoxColumn5.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn6
-            //
-            dataGridViewTextBoxColumn6.HeaderText = "IP地址";
-            dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
-            dataGridViewTextBoxColumn6.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn7
-            //
-            dataGridViewTextBoxColumn7.HeaderText = "端口";
-            dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
-            dataGridViewTextBoxColumn7.ReadOnly = true;
-            //
-            // dataGridViewCheckBoxColumn8 (CheckBox列)
-            //
-            dataGridViewCheckBoxColumn8.HeaderText = "启用";
-            dataGridViewCheckBoxColumn8.Name = "dataGridViewCheckBoxColumn8";
-            dataGridViewCheckBoxColumn8.ReadOnly = false;  // 允许编辑
-            //
-            // dataGridViewTextBoxColumn9
-            //
-            dataGridViewTextBoxColumn9.HeaderText = "在线状态";
-            dataGridViewTextBoxColumn9.Name = "dataGridViewTextBoxColumn9";
-            dataGridViewTextBoxColumn9.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn10
-            //
-            dataGridViewTextBoxColumn10.HeaderText = "心跳";
-            dataGridViewTextBoxColumn10.Name = "dataGridViewTextBoxColumn10";
-            dataGridViewTextBoxColumn10.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn11
-            //
-            dataGridViewTextBoxColumn11.HeaderText = "响应时间";
-            dataGridViewTextBoxColumn11.Name = "dataGridViewTextBoxColumn11";
-            dataGridViewTextBoxColumn11.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn12
-            //
-            dataGridViewTextBoxColumn12.HeaderText = "连接质量";
-            dataGridViewTextBoxColumn12.Name = "dataGridViewTextBoxColumn12";
-            dataGridViewTextBoxColumn12.ReadOnly = true;
-            //
-            // dataGridViewTextBoxColumn1
-            //
-            dataGridViewTextBoxColumn1.HeaderText = "配置文件";
-            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.ReadOnly = true;
-            // 
-            // DeviceMonitorForm
-            // 
-            AutoScaleDimensions = new SizeF(7F, 17F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1260, 808);
-            Controls.Add(txtInfo);
-            Controls.Add(lblInfo);
-            Controls.Add(btnDisconnect);
-            Controls.Add(btnConnect);
-            Controls.Add(btnRestart);
-            Controls.Add(btnStop);
-            Controls.Add(btnStart);
-            Controls.Add(btnRefresh);
-            Controls.Add(btnClearLog);
-            Controls.Add(btnTestMessage);
-            Controls.Add(dgvDevices);
-            Name = "DeviceMonitorForm";
-            Text = "设备监控 - 统一设备监控";
-            ((System.ComponentModel.ISupportInitialize)dgvDevices).EndInit();
-            ResumeLayout(false);
-            PerformLayout();
-        }
-
         private void LoadDevices()
         {
             try
@@ -419,7 +169,6 @@ namespace CIMMonitor.Forms
                 {
                     // 首次加载：完全重新加载
                     AddInfoText("🔄 首次加载设备配置...");
-
                     // 清空并重新加载设备列表
                     dgvDevices!.Rows.Clear();
                     devices.Clear();

@@ -18,15 +18,6 @@ namespace CIMMonitor.Forms
             LoadDeviceDetails();
         }
 
-        private void InitializeComponent()
-        {
-            this.Size = new Size(800, 600);
-            this.StartPosition = FormStartPosition.CenterParent;
-            //this.Text = $"设备详情 - {_deviceInfo.ServerName}";
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
-            this.MinimizeBox = true;
-        }
 
         private void InitializeCustomComponents()
         {

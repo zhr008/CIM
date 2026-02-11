@@ -26,10 +26,10 @@ namespace CIMMonitor.Forms
             dgvDevices = new DataGridView();
             dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn5 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
             dataGridViewCheckBoxColumn8 = new DataGridViewCheckBoxColumn();
             dataGridViewTextBoxColumn9 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn10 = new DataGridViewTextBoxColumn();
@@ -55,12 +55,13 @@ namespace CIMMonitor.Forms
             dgvDevices.AllowUserToDeleteRows = false;
             dgvDevices.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1 });
-            dgvDevices.Location = new Point(18, 21);
+            dgvDevices.Location = new Point(14, 11);
+            dgvDevices.Margin = new Padding(2, 2, 2, 2);
             dgvDevices.Name = "dgvDevices";
             dgvDevices.RowHeadersVisible = false;
             dgvDevices.RowHeadersWidth = 62;
             dgvDevices.RowTemplate.Height = 33;
-            dgvDevices.Size = new Size(1225, 312);
+            dgvDevices.Size = new Size(858, 212);
             dgvDevices.TabIndex = 0;
             // 
             // dataGridViewTextBoxColumn3
@@ -77,6 +78,18 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
             dataGridViewTextBoxColumn4.Width = 200;
             // 
+            // dataGridViewTextBoxColumn2
+            // 
+            dataGridViewTextBoxColumn2.HeaderText = "协议类型";
+            dataGridViewTextBoxColumn2.MinimumWidth = 8;
+            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
+            // 
+            // dataGridViewTextBoxColumn5
+            // 
+            dataGridViewTextBoxColumn5.HeaderText = "设备类型";
+            dataGridViewTextBoxColumn5.MinimumWidth = 8;
+            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
+            // 
             // dataGridViewTextBoxColumn6
             // 
             dataGridViewTextBoxColumn6.HeaderText = "IP地址";
@@ -90,20 +103,6 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn7.MinimumWidth = 8;
             dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
             dataGridViewTextBoxColumn7.Width = 80;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            dataGridViewTextBoxColumn2.HeaderText = "协议类型";
-            dataGridViewTextBoxColumn2.MinimumWidth = 8;
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            dataGridViewTextBoxColumn2.Width = 100;
-            // 
-            // dataGridViewTextBoxColumn5
-            // 
-            dataGridViewTextBoxColumn5.HeaderText = "设备类型";
-            dataGridViewTextBoxColumn5.MinimumWidth = 8;
-            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
-            dataGridViewTextBoxColumn5.Width = 100;
             // 
             // dataGridViewCheckBoxColumn8
             // 
@@ -149,63 +148,70 @@ namespace CIMMonitor.Forms
             // 
             // btnRefresh
             // 
-            btnRefresh.Location = new Point(17, 350);
+            btnRefresh.Location = new Point(12, 238);
+            btnRefresh.Margin = new Padding(2, 2, 2, 2);
             btnRefresh.Name = "btnRefresh";
-            btnRefresh.Size = new Size(105, 37);
+            btnRefresh.Size = new Size(74, 25);
             btnRefresh.TabIndex = 1;
             btnRefresh.Text = "刷新数据";
             btnRefresh.UseVisualStyleBackColor = true;
             // 
             // btnStart
             // 
-            btnStart.Location = new Point(139, 350);
+            btnStart.Location = new Point(97, 238);
+            btnStart.Margin = new Padding(2, 2, 2, 2);
             btnStart.Name = "btnStart";
-            btnStart.Size = new Size(105, 37);
+            btnStart.Size = new Size(74, 25);
             btnStart.TabIndex = 2;
             btnStart.Text = "启动监控";
             btnStart.UseVisualStyleBackColor = true;
             // 
             // btnStop
             // 
-            btnStop.Location = new Point(261, 350);
+            btnStop.Location = new Point(183, 238);
+            btnStop.Margin = new Padding(2, 2, 2, 2);
             btnStop.Name = "btnStop";
-            btnStop.Size = new Size(105, 37);
+            btnStop.Size = new Size(74, 25);
             btnStop.TabIndex = 3;
             btnStop.Text = "停止监控";
             btnStop.UseVisualStyleBackColor = true;
             // 
             // btnRestart
             // 
-            btnRestart.Location = new Point(384, 350);
+            btnRestart.Location = new Point(269, 238);
+            btnRestart.Margin = new Padding(2, 2, 2, 2);
             btnRestart.Name = "btnRestart";
-            btnRestart.Size = new Size(105, 37);
+            btnRestart.Size = new Size(74, 25);
             btnRestart.TabIndex = 4;
             btnRestart.Text = "重启监控";
             btnRestart.UseVisualStyleBackColor = true;
             // 
             // btnClearLog
             // 
-            btnClearLog.Location = new Point(507, 350);
+            btnClearLog.Location = new Point(355, 238);
+            btnClearLog.Margin = new Padding(2, 2, 2, 2);
             btnClearLog.Name = "btnClearLog";
-            btnClearLog.Size = new Size(105, 37);
+            btnClearLog.Size = new Size(74, 25);
             btnClearLog.TabIndex = 5;
             btnClearLog.Text = "清理日志";
             btnClearLog.UseVisualStyleBackColor = true;
             // 
             // btnConnect
             // 
-            btnConnect.Location = new Point(630, 350);
+            btnConnect.Location = new Point(441, 238);
+            btnConnect.Margin = new Padding(2, 2, 2, 2);
             btnConnect.Name = "btnConnect";
-            btnConnect.Size = new Size(105, 37);
+            btnConnect.Size = new Size(74, 25);
             btnConnect.TabIndex = 6;
             btnConnect.Text = "连接设备";
             btnConnect.UseVisualStyleBackColor = true;
             // 
             // btnDisconnect
             // 
-            btnDisconnect.Location = new Point(753, 350);
+            btnDisconnect.Location = new Point(527, 238);
+            btnDisconnect.Margin = new Padding(2, 2, 2, 2);
             btnDisconnect.Name = "btnDisconnect";
-            btnDisconnect.Size = new Size(105, 37);
+            btnDisconnect.Size = new Size(74, 25);
             btnDisconnect.TabIndex = 7;
             btnDisconnect.Text = "断开设备";
             btnDisconnect.UseVisualStyleBackColor = true;
@@ -213,34 +219,38 @@ namespace CIMMonitor.Forms
             // lblInfo
             // 
             lblInfo.AutoSize = true;
-            lblInfo.Location = new Point(1012, 360);
+            lblInfo.Location = new Point(708, 245);
+            lblInfo.Margin = new Padding(2, 0, 2, 0);
             lblInfo.Name = "lblInfo";
-            lblInfo.Size = new Size(0, 25);
+            lblInfo.Size = new Size(0, 17);
             lblInfo.TabIndex = 8;
             // 
             // txtInfo
             // 
-            txtInfo.Location = new Point(18, 393);
+            txtInfo.Location = new Point(13, 267);
+            txtInfo.Margin = new Padding(2, 2, 2, 2);
             txtInfo.Multiline = true;
             txtInfo.Name = "txtInfo";
             txtInfo.ScrollBars = ScrollBars.Vertical;
-            txtInfo.Size = new Size(1226, 393);
+            txtInfo.Size = new Size(859, 269);
             txtInfo.TabIndex = 9;
+            txtInfo.Text = "加载...";
             // 
             // btnTestMessage
             // 
-            btnTestMessage.Location = new Point(876, 350);
+            btnTestMessage.Location = new Point(613, 238);
+            btnTestMessage.Margin = new Padding(2, 2, 2, 2);
             btnTestMessage.Name = "btnTestMessage";
-            btnTestMessage.Size = new Size(120, 37);
+            btnTestMessage.Size = new Size(84, 25);
             btnTestMessage.TabIndex = 10;
             btnTestMessage.Text = "测试消息";
             btnTestMessage.UseVisualStyleBackColor = true;
             // 
             // Monitor
             // 
-            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1260, 808);
+            ClientSize = new Size(882, 549);
             Controls.Add(btnTestMessage);
             Controls.Add(txtInfo);
             Controls.Add(lblInfo);
@@ -252,6 +262,7 @@ namespace CIMMonitor.Forms
             Controls.Add(btnStart);
             Controls.Add(btnRefresh);
             Controls.Add(dgvDevices);
+            Margin = new Padding(2, 2, 2, 2);
             Name = "Monitor";
             Text = "设备监控 - 统一设备监控";
             ((System.ComponentModel.ISupportInitialize)dgvDevices).EndInit();
