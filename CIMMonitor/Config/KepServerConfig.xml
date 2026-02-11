@@ -229,9 +229,9 @@
                                 </Tag>
                             </Tags>
                         </TagGroup>
-                    </Devices>
-                </Device>
-            </Devices>
+					</TagGroups>
+			    </Device>
+           </Devices>
         </Channel>
     </Channels>
 
