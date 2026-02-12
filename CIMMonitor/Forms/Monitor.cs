@@ -16,6 +16,8 @@ namespace CIMMonitor.Forms
         private int selectedDeviceId = 0;
         private List<DeviceInfo> devices = new List<DeviceInfo>();
 
+        // 在Monitor类中添加_deviceManager字段
+        private Services.HsmsDeviceManager _deviceManager = null;
         /// <summary>
         /// 存储打开的设备详情窗体
         /// </summary>

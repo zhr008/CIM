@@ -11,7 +11,6 @@ using CIMMonitor.Services;
 using Common.Models;
 using Common.Services;
 using Common.Utilities;
-using WCFServices.Database;
 
 namespace CIMMonitor.Controllers
 {
@@ -22,7 +21,6 @@ namespace CIMMonitor.Controllers
     {
         private readonly HsmsDeviceManager _hsmsDeviceManager;
         private readonly TibcoRVService _tibcoService;
-        private readonly ConfigManager _configManager;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
         // 用于存储KepServer标签值的字典
@@ -34,16 +32,15 @@ namespace CIMMonitor.Controllers
         public CIMMonitorController()
         {
             _hsmsDeviceManager = new HsmsDeviceManager();
-            _configManager = new ConfigManager();
-            
+
             // 初始化TIBCO服务
-            var appConfig = _configManager.LoadAppConfig("Config/Config.xml");
+            var appConfig = ConfigManager.LoadAppConfig("Config/Config.xml");
             _tibcoService = new TibcoRVService(
                 appConfig.TibrvService.Service,
                 appConfig.TibrvService.NetworkInterface,
                 appConfig.TibrvService.Daemon
             );
-            
+
             _cancellationTokenSource = new CancellationTokenSource();
 
             // 订阅事件
@@ -95,7 +92,7 @@ namespace CIMMonitor.Controllers
             try
             {
                 // 从配置文件加载HSMS设备
-                var hsmsConfig = _configManager.LoadHsmsConfig("Config/HsmsConfig.xml");
+                var hsmsConfig = ConfigManager.LoadHsmsConfig("Config/HsmsConfig.xml");
 
                 foreach (var deviceInfo in hsmsConfig.Devices.DeviceList)
                 {
