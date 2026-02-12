@@ -1,23 +1,24 @@
 ```
-# Compiled files
-*.Designer.cs
+# Build artifacts
+*.obj
+*.exe
+*.dll
+*.pdb
+*.user
+*.sln.cache
+*.csproj.user
+*.userosscache
+*.suo
+*.userprefs
+*.cache
+*.log
 
 # Dependencies
 packages/
 bin/
 obj/
-
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vs/
-.vshost.exe
-.userprefs
+Debug/
+Release/
+x64/
+x86/
 ```
