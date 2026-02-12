@@ -1,39 +1,29 @@
 ```
 # Build artifacts
-obj/
-bin/
-*.dll
+*.obj
 *.exe
+*.dll
 *.pdb
 *.userprefs
 *.cache
-*.compiled
-*.log
 *.tmp
+*.log
 
 # Dependencies
 packages/
-node_modules/
-bower_components/
+bin/
+obj/
 
-# IDE files
+# Editors
 .vs/
-.vscode/
-.idea/
-*.suo
+.vshistory/
+_ReSharper*/
 *.user
+*.suo
 *.userosscache
 *.sln.docstates
 
-# OS files
-Thumbs.db
+# OS
 .DS_Store
-Desktop.ini
-$RECYCLE.BIN/
-ehthumbs.db
-
-# Environment variables
-.env
-.env.local
-*.env
+Thumbs.db
 ```

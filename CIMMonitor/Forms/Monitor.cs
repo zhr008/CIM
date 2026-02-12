@@ -44,6 +44,8 @@ namespace CIMMonitor.Forms
 
             // 绑定CheckBox列的事件处理程序
             dgvDevices.CellValueChanged += DgvDevices_CellValueChanged;
+            // 绑定按钮列的点击事件
+            dgvDevices.CellContentClick += DgvDevices_CellContentClick;
 
             try
             {
@@ -708,7 +710,8 @@ namespace CIMMonitor.Forms
                     deviceInfo.HeartbeatCount,
                     deviceInfo.ResponseTimeMs > 0 ? deviceInfo.ResponseTimeMs + "ms" : "-",
                     deviceInfo.ConnectionQuality,
-                    deviceInfo.SourceFile
+                    deviceInfo.SourceFile,
+                    "详细"  // 详细按钮列
                 );
             }
 
@@ -780,6 +783,47 @@ namespace CIMMonitor.Forms
                 if (rowIndex >= 0 && rowIndex < devices.Count)
                 {
                     var deviceInfo = devices[rowIndex];
+                    
+                    // 检查是否已经打开了该设备的详情窗口
+                    string formKey = deviceInfo.ServerId;
+                    if (_openDetailForms.ContainsKey(formKey))
+                    {
+                        // 如果窗口已存在，激活它
+                        _openDetailForms[formKey].Activate();
+                    }
+                    else
+                    {
+                        // 创建新的详情窗口
+                        var detailForm = new MonitorDetail(deviceInfo);
+                        
+                        // 保存窗口引用以便后续管理
+                        _openDetailForms[formKey] = detailForm;
+                        
+                        // 当窗口关闭时，从字典中移除引用
+                        detailForm.FormClosed += (s, args) =>
+                        {
+                            if (_openDetailForms.ContainsKey(formKey))
+                            {
+                                _openDetailForms.Remove(formKey);
+                            }
+                        };
+                        
+                        // 显示窗口
+                        detailForm.Show();
+                    }
+                }
+            }
+        }
+
+        private void DgvDevices_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            // 检查点击的是不是"详细"按钮列
+            if (e.ColumnIndex >= 0 && e.RowIndex >= 0)
+            {
+                var columnName = dgvDevices.Columns[e.ColumnIndex].Name;
+                if (columnName == "dataGridViewButtonColumnDetail" && e.RowIndex < devices.Count)
+                {
+                    var deviceInfo = devices[e.RowIndex];
                     
                     // 检查是否已经打开了该设备的详情窗口
                     string formKey = deviceInfo.ServerId;

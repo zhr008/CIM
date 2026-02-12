@@ -36,6 +36,7 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn11 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn12 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
+            dataGridViewButtonColumnDetail = new DataGridViewButtonColumn();
             btnRefresh = new Button();
             btnStart = new Button();
             btnStop = new Button();
@@ -54,7 +55,7 @@ namespace CIMMonitor.Forms
             dgvDevices.AllowUserToAddRows = false;
             dgvDevices.AllowUserToDeleteRows = false;
             dgvDevices.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1 });
+            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1, dataGridViewButtonColumnDetail });
             dgvDevices.Location = new Point(14, 11);
             dgvDevices.Margin = new Padding(2, 2, 2, 2);
             dgvDevices.Name = "dgvDevices";
@@ -145,6 +146,15 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn1.MinimumWidth = 8;
             dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
             dataGridViewTextBoxColumn1.Width = 150;
+            // 
+            // dataGridViewButtonColumnDetail
+            // 
+            dataGridViewButtonColumnDetail.HeaderText = "详细";
+            dataGridViewButtonColumnDetail.MinimumWidth = 8;
+            dataGridViewButtonColumnDetail.Name = "dataGridViewButtonColumnDetail";
+            dataGridViewButtonColumnDetail.Text = "详细";
+            dataGridViewButtonColumnDetail.UseColumnTextForButtonValue = true;
+            dataGridViewButtonColumnDetail.Width = 60;
             // 
             // btnRefresh
             // 
@@ -294,6 +304,7 @@ namespace CIMMonitor.Forms
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn11;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
+        private DataGridViewButtonColumn dataGridViewButtonColumnDetail;
         private Button btnTestMessage;
     }
 }
