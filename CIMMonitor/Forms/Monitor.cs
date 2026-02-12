@@ -707,15 +707,9 @@ namespace CIMMonitor.Forms
                     deviceInfo.Port,
                     deviceInfo.Enabled,  // 直接使用bool值，显示为CheckBox
                     deviceInfo.IsOnline ? "在线" : "离线",
-                    deviceInfo.HeartbeatCount,
-                    deviceInfo.ResponseTimeMs > 0 ? deviceInfo.ResponseTimeMs + "ms" : "-",
-                    deviceInfo.ConnectionQuality,
-                    deviceInfo.SourceFile,
-                    "详细"  // 详细按钮列
+                    deviceInfo.SourceFile  // 配置文件列
                 );
             }
-
-            //DisplayXmlLog();
         }
 
         private string GetConnectionQuality(int responseTime)

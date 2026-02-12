@@ -32,11 +32,7 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
             dataGridViewCheckBoxColumn8 = new DataGridViewCheckBoxColumn();
             dataGridViewTextBoxColumn9 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn10 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn11 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn12 = new DataGridViewTextBoxColumn();
             dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewButtonColumnDetail = new DataGridViewButtonColumn();
             btnRefresh = new Button();
             btnStart = new Button();
             btnStop = new Button();
@@ -55,7 +51,7 @@ namespace CIMMonitor.Forms
             dgvDevices.AllowUserToAddRows = false;
             dgvDevices.AllowUserToDeleteRows = false;
             dgvDevices.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1, dataGridViewButtonColumnDetail });
+            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn1 });
             dgvDevices.Location = new Point(14, 11);
             dgvDevices.Margin = new Padding(2, 2, 2, 2);
             dgvDevices.Name = "dgvDevices";
@@ -119,26 +115,11 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn9.Name = "dataGridViewTextBoxColumn9";
             dataGridViewTextBoxColumn9.Width = 80;
             // 
-            // dataGridViewTextBoxColumn10
             // 
-            dataGridViewTextBoxColumn10.HeaderText = "心跳";
-            dataGridViewTextBoxColumn10.MinimumWidth = 8;
-            dataGridViewTextBoxColumn10.Name = "dataGridViewTextBoxColumn10";
-            dataGridViewTextBoxColumn10.Width = 60;
             // 
-            // dataGridViewTextBoxColumn11
             // 
-            dataGridViewTextBoxColumn11.HeaderText = "响应时间";
-            dataGridViewTextBoxColumn11.MinimumWidth = 8;
-            dataGridViewTextBoxColumn11.Name = "dataGridViewTextBoxColumn11";
-            dataGridViewTextBoxColumn11.Width = 80;
             // 
-            // dataGridViewTextBoxColumn12
             // 
-            dataGridViewTextBoxColumn12.HeaderText = "连接质量";
-            dataGridViewTextBoxColumn12.MinimumWidth = 8;
-            dataGridViewTextBoxColumn12.Name = "dataGridViewTextBoxColumn12";
-            dataGridViewTextBoxColumn12.Width = 80;
             // 
             // dataGridViewTextBoxColumn1
             // 
@@ -147,14 +128,7 @@ namespace CIMMonitor.Forms
             dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
             dataGridViewTextBoxColumn1.Width = 150;
             // 
-            // dataGridViewButtonColumnDetail
             // 
-            dataGridViewButtonColumnDetail.HeaderText = "详细";
-            dataGridViewButtonColumnDetail.MinimumWidth = 8;
-            dataGridViewButtonColumnDetail.Name = "dataGridViewButtonColumnDetail";
-            dataGridViewButtonColumnDetail.Text = "详细";
-            dataGridViewButtonColumnDetail.UseColumnTextForButtonValue = true;
-            dataGridViewButtonColumnDetail.Width = 60;
             // 
             // btnRefresh
             // 
@@ -300,11 +274,7 @@ namespace CIMMonitor.Forms
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
         private DataGridViewCheckBoxColumn dataGridViewCheckBoxColumn8;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn9;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn10;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn11;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
-        private DataGridViewButtonColumn dataGridViewButtonColumnDetail;
         private Button btnTestMessage;
     }
 }
