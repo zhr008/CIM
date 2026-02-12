@@ -1,16 +1,18 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Drawing.Drawing2D;
+using CIMMonitor.Models;
 
 namespace CIMMonitor.Forms
 {
     public partial class MonitorDetail : Form
     {
-        private readonly Monitor.DeviceInfo _deviceInfo;
+        private readonly DeviceInfo _deviceInfo;
         private TextBox txtLog;
         private Label lblTitle;
 
-        public MonitorDetail(Monitor.DeviceInfo deviceInfo)
+        public MonitorDetail(DeviceInfo deviceInfo)
         {
             _deviceInfo = deviceInfo;
             InitializeComponent();
@@ -35,24 +37,24 @@ namespace CIMMonitor.Forms
             // 创建设备详情面板
             CreateDeviceDetailsPanel();
 
-            // 日志文本框
+            // 消息日志文本框
             txtLog = new TextBox
             {
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                Location = new Point(20, 250),
-                Size = new Size(750, 300),
+                Location = new Point(20, 320),
+                Size = new Size(750, 250),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
                 ReadOnly = true,
                 Font = new Font("Consolas", 9F)
             };
             this.Controls.Add(txtLog);
 
-            // 添加日志标签
+            // 添加消息日志标签
             var logLabel = new Label
             {
-                Text = "设备日志:",
-                Location = new Point(20, 230),
+                Text = "消息日志:",
+                Location = new Point(20, 300),
                 Size = new Size(100, 20),
                 Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold)
             };
@@ -103,15 +105,38 @@ namespace CIMMonitor.Forms
             yPos += lineHeight + spacing;
 
             // 启用状态
-            AddDetailRow(panel, "启用状态:", _deviceInfo.Enabled ? "启用" : "禁用", 10, yPos, labelWidth, valueWidth, lineHeight);
+            AddDetailRow(panel, "启用:", _deviceInfo.Enabled ? "启用" : "禁用", 10, yPos, labelWidth, valueWidth, lineHeight);
             yPos += lineHeight + spacing;
 
             // 在线状态
             AddDetailRow(panel, "在线状态:", _deviceInfo.IsOnline ? "在线" : "离线", 10, yPos, labelWidth, valueWidth, lineHeight);
             yPos += lineHeight + spacing;
 
-            // 心跳计数
-            AddDetailRow(panel, "心跳计数:", _deviceInfo.HeartbeatCount.ToString(), 10, yPos, labelWidth, valueWidth, lineHeight);
+            // 添加心跳指示器
+            var heartbeatLabel = new Label
+            {
+                Text = "心跳:",
+                Location = new Point(10, yPos),
+                Size = new Size(labelWidth, lineHeight),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Microsoft Sans Serif", 9F)
+            };
+            panel.Controls.Add(heartbeatLabel);
+
+            var heartbeatPictureBox = new PictureBox
+            {
+                Name = "pbHeartbeat",
+                Location = new Point(10 + labelWidth + 10, yPos),
+                Size = new Size(20, 20),
+                BackColor = Color.Gray, // 默认灰色
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            panel.Controls.Add(heartbeatPictureBox);
+
+            // 启动心跳定时器
+            StartHeartbeatIndicator(heartbeatPictureBox);
+
             yPos += lineHeight + spacing;
 
             // 响应时间
@@ -120,9 +145,9 @@ namespace CIMMonitor.Forms
 
             // 连接质量
             AddDetailRow(panel, "连接质量:", _deviceInfo.ConnectionQuality, 10, yPos, labelWidth, valueWidth, lineHeight);
-            
-            // 配置文件来源
             yPos += lineHeight + spacing;
+
+            // 配置文件来源
             AddDetailRow(panel, "配置文件:", _deviceInfo.SourceFile, 10, yPos, labelWidth, valueWidth, lineHeight);
         }
 
@@ -186,7 +211,7 @@ namespace CIMMonitor.Forms
             }
         }
 
-        public void UpdateDeviceStatus(Monitor.DeviceInfo updatedDeviceInfo)
+        public void UpdateDeviceStatus(DeviceInfo updatedDeviceInfo)
         {
             if (this.InvokeRequired)
             {
@@ -228,13 +253,34 @@ namespace CIMMonitor.Forms
             CreateDeviceDetailsPanel();
         }
 
+        private void StartHeartbeatIndicator(PictureBox pictureBox)
+        {
+            var heartbeatTimer = new System.Windows.Forms.Timer();
+            heartbeatTimer.Interval = 3000; // 3秒一跳
+            Color[] colors = { Color.Red, Color.Gray, Color.Green }; // 红-灰-绿
+            int colorIndex = 0;
+            
+            heartbeatTimer.Tick += (sender, e) =>
+            {
+                pictureBox.BackColor = colors[colorIndex];
+                colorIndex = (colorIndex + 1) % colors.Length; // 循环颜色
+                
+                // 更新设备状态信息
+                if (_deviceInfo.IsOnline)
+                {
+                    AppendLog($"[{DateTime.Now:HH:mm:ss}] 心跳状态: {pictureBox.BackColor.Name}, 响应时间: {_deviceInfo.ResponseTimeMs}ms");
+                }
+            };
+            heartbeatTimer.Start();
+        }
+        
         private void StartHeartbeatTimer()
         {
-            var heartbeatTimer = new System.Windows.Forms.Timer
+            var timer = new System.Windows.Forms.Timer
             {
                 Interval = 5000 // 每5秒更新一次
             };
-            heartbeatTimer.Tick += (sender, e) =>
+            timer.Tick += (sender, e) =>
             {
                 // 更新设备状态信息
                 if (_deviceInfo.IsOnline)
@@ -242,7 +288,7 @@ namespace CIMMonitor.Forms
                     AppendLog($"[{DateTime.Now:HH:mm:ss}] 心跳: {_deviceInfo.HeartbeatCount}, 响应时间: {_deviceInfo.ResponseTimeMs}ms");
                 }
             };
-            heartbeatTimer.Start();
+            timer.Start();
         }
     }
 }

@@ -24,19 +24,6 @@ namespace CIMMonitor.Forms
         private void InitializeComponent()
         {
             dgvDevices = new DataGridView();
-            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn5 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
-            dataGridViewCheckBoxColumn8 = new DataGridViewCheckBoxColumn();
-            dataGridViewTextBoxColumn9 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn10 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn11 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn12 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewButtonColumnDetail = new DataGridViewButtonColumn();
             btnRefresh = new Button();
             btnStart = new Button();
             btnStop = new Button();
@@ -47,6 +34,16 @@ namespace CIMMonitor.Forms
             lblInfo = new Label();
             txtInfo = new TextBox();
             btnTestMessage = new Button();
+            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn4 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn5 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn6 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn7 = new DataGridViewTextBoxColumn();
+            dataGridViewCheckBoxColumn8 = new DataGridViewCheckBoxColumn();
+            dataGridViewTextBoxColumn9 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
+            dataGridViewButtonColumnDetail = new DataGridViewButtonColumn();
             ((System.ComponentModel.ISupportInitialize)dgvDevices).BeginInit();
             SuspendLayout();
             // 
@@ -55,111 +52,20 @@ namespace CIMMonitor.Forms
             dgvDevices.AllowUserToAddRows = false;
             dgvDevices.AllowUserToDeleteRows = false;
             dgvDevices.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn10, dataGridViewTextBoxColumn11, dataGridViewTextBoxColumn12, dataGridViewTextBoxColumn1, dataGridViewButtonColumnDetail });
+            dgvDevices.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn3, dataGridViewTextBoxColumn4, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn5, dataGridViewTextBoxColumn6, dataGridViewTextBoxColumn7, dataGridViewCheckBoxColumn8, dataGridViewTextBoxColumn9, dataGridViewTextBoxColumn1, dataGridViewButtonColumnDetail });
             dgvDevices.Location = new Point(14, 11);
-            dgvDevices.Margin = new Padding(2, 2, 2, 2);
+            dgvDevices.Margin = new Padding(2);
             dgvDevices.Name = "dgvDevices";
             dgvDevices.RowHeadersVisible = false;
             dgvDevices.RowHeadersWidth = 62;
             dgvDevices.RowTemplate.Height = 33;
-            dgvDevices.Size = new Size(858, 212);
+            dgvDevices.Size = new Size(919, 212);
             dgvDevices.TabIndex = 0;
-            // 
-            // dataGridViewTextBoxColumn3
-            // 
-            dataGridViewTextBoxColumn3.HeaderText = "设备ID";
-            dataGridViewTextBoxColumn3.MinimumWidth = 8;
-            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
-            dataGridViewTextBoxColumn3.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn4
-            // 
-            dataGridViewTextBoxColumn4.HeaderText = "设备名称";
-            dataGridViewTextBoxColumn4.MinimumWidth = 8;
-            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
-            dataGridViewTextBoxColumn4.Width = 200;
-            // 
-            // dataGridViewTextBoxColumn2
-            // 
-            dataGridViewTextBoxColumn2.HeaderText = "协议类型";
-            dataGridViewTextBoxColumn2.MinimumWidth = 8;
-            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
-            // 
-            // dataGridViewTextBoxColumn5
-            // 
-            dataGridViewTextBoxColumn5.HeaderText = "设备类型";
-            dataGridViewTextBoxColumn5.MinimumWidth = 8;
-            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
-            // 
-            // dataGridViewTextBoxColumn6
-            // 
-            dataGridViewTextBoxColumn6.HeaderText = "IP地址";
-            dataGridViewTextBoxColumn6.MinimumWidth = 8;
-            dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
-            dataGridViewTextBoxColumn6.Width = 150;
-            // 
-            // dataGridViewTextBoxColumn7
-            // 
-            dataGridViewTextBoxColumn7.HeaderText = "端口";
-            dataGridViewTextBoxColumn7.MinimumWidth = 8;
-            dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
-            dataGridViewTextBoxColumn7.Width = 80;
-            // 
-            // dataGridViewCheckBoxColumn8
-            // 
-            dataGridViewCheckBoxColumn8.HeaderText = "启用";
-            dataGridViewCheckBoxColumn8.MinimumWidth = 8;
-            dataGridViewCheckBoxColumn8.Name = "dataGridViewCheckBoxColumn8";
-            dataGridViewCheckBoxColumn8.Width = 60;
-            // 
-            // dataGridViewTextBoxColumn9
-            // 
-            dataGridViewTextBoxColumn9.HeaderText = "在线状态";
-            dataGridViewTextBoxColumn9.MinimumWidth = 8;
-            dataGridViewTextBoxColumn9.Name = "dataGridViewTextBoxColumn9";
-            dataGridViewTextBoxColumn9.Width = 80;
-            // 
-            // dataGridViewTextBoxColumn10
-            // 
-            dataGridViewTextBoxColumn10.HeaderText = "心跳";
-            dataGridViewTextBoxColumn10.MinimumWidth = 8;
-            dataGridViewTextBoxColumn10.Name = "dataGridViewTextBoxColumn10";
-            dataGridViewTextBoxColumn10.Width = 60;
-            // 
-            // dataGridViewTextBoxColumn11
-            // 
-            dataGridViewTextBoxColumn11.HeaderText = "响应时间";
-            dataGridViewTextBoxColumn11.MinimumWidth = 8;
-            dataGridViewTextBoxColumn11.Name = "dataGridViewTextBoxColumn11";
-            dataGridViewTextBoxColumn11.Width = 80;
-            // 
-            // dataGridViewTextBoxColumn12
-            // 
-            dataGridViewTextBoxColumn12.HeaderText = "连接质量";
-            dataGridViewTextBoxColumn12.MinimumWidth = 8;
-            dataGridViewTextBoxColumn12.Name = "dataGridViewTextBoxColumn12";
-            dataGridViewTextBoxColumn12.Width = 80;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            dataGridViewTextBoxColumn1.HeaderText = "配置文件";
-            dataGridViewTextBoxColumn1.MinimumWidth = 8;
-            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            dataGridViewTextBoxColumn1.Width = 150;
-            // 
-            // dataGridViewButtonColumnDetail
-            // 
-            dataGridViewButtonColumnDetail.HeaderText = "详细";
-            dataGridViewButtonColumnDetail.MinimumWidth = 8;
-            dataGridViewButtonColumnDetail.Name = "dataGridViewButtonColumnDetail";
-            dataGridViewButtonColumnDetail.Text = "详细";
-            dataGridViewButtonColumnDetail.UseColumnTextForButtonValue = true;
-            dataGridViewButtonColumnDetail.Width = 60;
             // 
             // btnRefresh
             // 
             btnRefresh.Location = new Point(12, 238);
-            btnRefresh.Margin = new Padding(2, 2, 2, 2);
+            btnRefresh.Margin = new Padding(2);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.Size = new Size(74, 25);
             btnRefresh.TabIndex = 1;
@@ -169,7 +75,7 @@ namespace CIMMonitor.Forms
             // btnStart
             // 
             btnStart.Location = new Point(97, 238);
-            btnStart.Margin = new Padding(2, 2, 2, 2);
+            btnStart.Margin = new Padding(2);
             btnStart.Name = "btnStart";
             btnStart.Size = new Size(74, 25);
             btnStart.TabIndex = 2;
@@ -179,7 +85,7 @@ namespace CIMMonitor.Forms
             // btnStop
             // 
             btnStop.Location = new Point(183, 238);
-            btnStop.Margin = new Padding(2, 2, 2, 2);
+            btnStop.Margin = new Padding(2);
             btnStop.Name = "btnStop";
             btnStop.Size = new Size(74, 25);
             btnStop.TabIndex = 3;
@@ -189,7 +95,7 @@ namespace CIMMonitor.Forms
             // btnRestart
             // 
             btnRestart.Location = new Point(269, 238);
-            btnRestart.Margin = new Padding(2, 2, 2, 2);
+            btnRestart.Margin = new Padding(2);
             btnRestart.Name = "btnRestart";
             btnRestart.Size = new Size(74, 25);
             btnRestart.TabIndex = 4;
@@ -199,7 +105,7 @@ namespace CIMMonitor.Forms
             // btnClearLog
             // 
             btnClearLog.Location = new Point(355, 238);
-            btnClearLog.Margin = new Padding(2, 2, 2, 2);
+            btnClearLog.Margin = new Padding(2);
             btnClearLog.Name = "btnClearLog";
             btnClearLog.Size = new Size(74, 25);
             btnClearLog.TabIndex = 5;
@@ -209,7 +115,7 @@ namespace CIMMonitor.Forms
             // btnConnect
             // 
             btnConnect.Location = new Point(441, 238);
-            btnConnect.Margin = new Padding(2, 2, 2, 2);
+            btnConnect.Margin = new Padding(2);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(74, 25);
             btnConnect.TabIndex = 6;
@@ -219,7 +125,7 @@ namespace CIMMonitor.Forms
             // btnDisconnect
             // 
             btnDisconnect.Location = new Point(527, 238);
-            btnDisconnect.Margin = new Padding(2, 2, 2, 2);
+            btnDisconnect.Margin = new Padding(2);
             btnDisconnect.Name = "btnDisconnect";
             btnDisconnect.Size = new Size(74, 25);
             btnDisconnect.TabIndex = 7;
@@ -238,29 +144,101 @@ namespace CIMMonitor.Forms
             // txtInfo
             // 
             txtInfo.Location = new Point(13, 267);
-            txtInfo.Margin = new Padding(2, 2, 2, 2);
+            txtInfo.Margin = new Padding(2);
             txtInfo.Multiline = true;
             txtInfo.Name = "txtInfo";
             txtInfo.ScrollBars = ScrollBars.Vertical;
-            txtInfo.Size = new Size(859, 269);
+            txtInfo.Size = new Size(920, 303);
             txtInfo.TabIndex = 9;
             txtInfo.Text = "加载...";
             // 
             // btnTestMessage
             // 
             btnTestMessage.Location = new Point(613, 238);
-            btnTestMessage.Margin = new Padding(2, 2, 2, 2);
+            btnTestMessage.Margin = new Padding(2);
             btnTestMessage.Name = "btnTestMessage";
             btnTestMessage.Size = new Size(84, 25);
             btnTestMessage.TabIndex = 10;
             btnTestMessage.Text = "测试消息";
             btnTestMessage.UseVisualStyleBackColor = true;
             // 
+            // dataGridViewTextBoxColumn3
+            // 
+            dataGridViewTextBoxColumn3.HeaderText = "设备ID";
+            dataGridViewTextBoxColumn3.MinimumWidth = 8;
+            dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
+            dataGridViewTextBoxColumn3.Width = 120;
+            // 
+            // dataGridViewTextBoxColumn4
+            // 
+            dataGridViewTextBoxColumn4.HeaderText = "设备名称";
+            dataGridViewTextBoxColumn4.MinimumWidth = 8;
+            dataGridViewTextBoxColumn4.Name = "dataGridViewTextBoxColumn4";
+            dataGridViewTextBoxColumn4.Width = 200;
+            // 
+            // dataGridViewTextBoxColumn2
+            // 
+            dataGridViewTextBoxColumn2.HeaderText = "协议类型";
+            dataGridViewTextBoxColumn2.MinimumWidth = 8;
+            dataGridViewTextBoxColumn2.Name = "dataGridViewTextBoxColumn2";
+            dataGridViewTextBoxColumn2.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn5
+            // 
+            dataGridViewTextBoxColumn5.HeaderText = "设备类型";
+            dataGridViewTextBoxColumn5.MinimumWidth = 8;
+            dataGridViewTextBoxColumn5.Name = "dataGridViewTextBoxColumn5";
+            dataGridViewTextBoxColumn5.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn6
+            // 
+            dataGridViewTextBoxColumn6.HeaderText = "IP地址";
+            dataGridViewTextBoxColumn6.MinimumWidth = 8;
+            dataGridViewTextBoxColumn6.Name = "dataGridViewTextBoxColumn6";
+            dataGridViewTextBoxColumn6.Width = 90;
+            // 
+            // dataGridViewTextBoxColumn7
+            // 
+            dataGridViewTextBoxColumn7.HeaderText = "端口";
+            dataGridViewTextBoxColumn7.MinimumWidth = 8;
+            dataGridViewTextBoxColumn7.Name = "dataGridViewTextBoxColumn7";
+            dataGridViewTextBoxColumn7.Width = 60;
+            // 
+            // dataGridViewCheckBoxColumn8
+            // 
+            dataGridViewCheckBoxColumn8.HeaderText = "启用";
+            dataGridViewCheckBoxColumn8.MinimumWidth = 8;
+            dataGridViewCheckBoxColumn8.Name = "dataGridViewCheckBoxColumn8";
+            dataGridViewCheckBoxColumn8.Width = 60;
+            // 
+            // dataGridViewTextBoxColumn9
+            // 
+            dataGridViewTextBoxColumn9.HeaderText = "状态";
+            dataGridViewTextBoxColumn9.MinimumWidth = 8;
+            dataGridViewTextBoxColumn9.Name = "dataGridViewTextBoxColumn9";
+            dataGridViewTextBoxColumn9.Width = 60;
+            // 
+            // dataGridViewTextBoxColumn1
+            // 
+            dataGridViewTextBoxColumn1.HeaderText = "配置文件";
+            dataGridViewTextBoxColumn1.MinimumWidth = 8;
+            dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
+            dataGridViewTextBoxColumn1.Width = 90;
+            // 
+            // dataGridViewButtonColumnDetail
+            // 
+            dataGridViewButtonColumnDetail.HeaderText = "详细";
+            dataGridViewButtonColumnDetail.MinimumWidth = 8;
+            dataGridViewButtonColumnDetail.Name = "dataGridViewButtonColumnDetail";
+            dataGridViewButtonColumnDetail.Text = "详细";
+            dataGridViewButtonColumnDetail.UseColumnTextForButtonValue = true;
+            dataGridViewButtonColumnDetail.Width = 60;
+            // 
             // Monitor
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(882, 549);
+            ClientSize = new Size(944, 581);
             Controls.Add(btnTestMessage);
             Controls.Add(txtInfo);
             Controls.Add(lblInfo);
@@ -272,7 +250,7 @@ namespace CIMMonitor.Forms
             Controls.Add(btnStart);
             Controls.Add(btnRefresh);
             Controls.Add(dgvDevices);
-            Margin = new Padding(2, 2, 2, 2);
+            Margin = new Padding(2);
             Name = "Monitor";
             Text = "设备监控 - 统一设备监控";
             ((System.ComponentModel.ISupportInitialize)dgvDevices).EndInit();
@@ -292,19 +270,16 @@ namespace CIMMonitor.Forms
         private Button btnDisconnect;
         private Label lblInfo;
         private TextBox txtInfo;
+        private Button btnTestMessage;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn4;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn5;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn6;
+        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn7;
         private DataGridViewCheckBoxColumn dataGridViewCheckBoxColumn8;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn9;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn10;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn11;
-        private DataGridViewTextBoxColumn dataGridViewTextBoxColumn12;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewButtonColumn dataGridViewButtonColumnDetail;
-        private Button btnTestMessage;
     }
 }

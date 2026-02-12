@@ -4,26 +4,21 @@
 *.exe
 *.dll
 *.pdb
+*.user
+*.sln.cache
+*.csproj.user
+*.userosscache
+*.suo
 *.userprefs
 *.cache
-*.tmp
 *.log
 
 # Dependencies
 packages/
 bin/
 obj/
-
-# Editors
-.vs/
-.vshistory/
-_ReSharper*/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# OS
-.DS_Store
-Thumbs.db
+Debug/
+Release/
+x64/
+x86/
 ```
