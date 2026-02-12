@@ -22,9 +22,9 @@ namespace CIMMonitor.Forms
         private Dictionary<string, MonitorDetail> _openDetailForms = new Dictionary<string, MonitorDetail>();
 
         /// <summary>
-        /// HSMS设备管理器
+        /// CIMMonitor主控制器
         /// </summary>
-        private Services.HsmsDeviceManager? _deviceManager;
+        private Controllers.CIMMonitorController? _cimController;
 
         /// <summary>
         /// 已添加的设备ID集合（避免重复添加）
