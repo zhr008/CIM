@@ -2,16 +2,17 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using CIMMonitor.Models;
 
 namespace CIMMonitor.Forms
 {
     public partial class MonitorDetail : Form
     {
-        private readonly Monitor.DeviceInfo _deviceInfo;
+        private readonly DeviceInfo _deviceInfo;
         private TextBox txtLog;
         private Label lblTitle;
 
-        public MonitorDetail(Monitor.DeviceInfo deviceInfo)
+        public MonitorDetail(DeviceInfo deviceInfo)
         {
             _deviceInfo = deviceInfo;
             InitializeComponent();
@@ -210,7 +211,7 @@ namespace CIMMonitor.Forms
             }
         }
 
-        public void UpdateDeviceStatus(Monitor.DeviceInfo updatedDeviceInfo)
+        public void UpdateDeviceStatus(DeviceInfo updatedDeviceInfo)
         {
             if (this.InvokeRequired)
             {

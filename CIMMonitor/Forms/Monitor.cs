@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
-using System.Xml.Linq;
 using CIMMonitor.Models;
+using CIMMonitor.Services;
+using CIMMonitor.Controllers;
+using System.Globalization;
+using System.Xml.Linq;
 
 namespace CIMMonitor.Forms
 {
@@ -16,17 +12,17 @@ namespace CIMMonitor.Forms
         private int selectedDeviceId = 0;
         private List<DeviceInfo> devices = new List<DeviceInfo>();
 
+        /// <summary>
+        /// CIMMonitor主控制器
+        /// </summary>
+        private CIMMonitorController? _cimController;
+
         // 在Monitor类中添加_deviceManager字段
-        private Services.HsmsDeviceManager _deviceManager = null;
+        private HsmsDeviceManager? _deviceManager;
         /// <summary>
         /// 存储打开的设备详情窗体
         /// </summary>
         private Dictionary<string, MonitorDetail> _openDetailForms = new Dictionary<string, MonitorDetail>();
-
-        /// <summary>
-        /// CIMMonitor主控制器
-        /// </summary>
-        private Controllers.CIMMonitorController? _cimController;
 
         /// <summary>
         /// 已添加的设备ID集合（避免重复添加）
@@ -42,17 +38,15 @@ namespace CIMMonitor.Forms
         {
             InitializeComponent();
 
-            // 绑定CheckBox列的事件处理程序
+            // 绑定CheckBox列的事件处理程序 启用/禁用
             dgvDevices.CellValueChanged += DgvDevices_CellValueChanged;
-            // 绑定按钮列的点击事件
-            dgvDevices.CellContentClick += DgvDevices_CellContentClick;
 
             try
             {
                 // 初始化设备管理器（如果HsmsSimulator引用可用）
                 try
                 {
-                    _deviceManager = new Services.HsmsDeviceManager();
+                    _deviceManager = new HsmsDeviceManager();
                     _deviceManager.DeviceStatusChanged += OnDeviceStatusChanged;
                     _deviceManager.DeviceMessageReceived += OnDeviceMessageReceived;
 
@@ -95,22 +89,6 @@ namespace CIMMonitor.Forms
         /// <summary>
         /// 设备信息模型
         /// </summary>
-        public class DeviceInfo
-        {
-            public string ServerId { get; set; } = "";
-            public string ServerName { get; set; } = "";
-            public string ProtocolType { get; set; } = "";
-            public string DeviceType { get; set; } = "";  // host/EQP
-            public string Host { get; set; } = "";
-            public int Port { get; set; }
-            public bool Enabled { get; set; }
-            public bool IsOnline { get; set; }
-            public int HeartbeatCount { get; set; }
-            public int ResponseTimeMs { get; set; }
-            public string ConnectionQuality { get; set; } = "";
-            public string LastUpdate { get; set; } = "";
-            public string SourceFile { get; set; } = "";
-        }
 
         // 新增：从配置解析 DeviceId / SessionId 的辅助方法，支持 0x 前缀的十六进制或十进制字符串
         private static byte ParseDeviceIdValue(string? raw)
@@ -707,7 +685,8 @@ namespace CIMMonitor.Forms
                     deviceInfo.Port,
                     deviceInfo.Enabled,  // 直接使用bool值，显示为CheckBox
                     deviceInfo.IsOnline ? "在线" : "离线",
-                    deviceInfo.SourceFile  // 配置文件列
+                    deviceInfo.SourceFile,  // 配置文件列
+                    "详细"  // 详细按钮列
                 );
             }
         }
@@ -766,87 +745,6 @@ namespace CIMMonitor.Forms
             if (dgvDevices!.SelectedRows.Count > 0)
             {
                 selectedDeviceId = dgvDevices.SelectedRows[0].Index;
-            }
-        }
-
-        private void DgvDevices_DoubleClick(object? sender, EventArgs e)
-        {
-            if (dgvDevices!.SelectedRows.Count > 0)
-            {
-                int rowIndex = dgvDevices.SelectedRows[0].Index;
-                if (rowIndex >= 0 && rowIndex < devices.Count)
-                {
-                    var deviceInfo = devices[rowIndex];
-                    
-                    // 检查是否已经打开了该设备的详情窗口
-                    string formKey = deviceInfo.ServerId;
-                    if (_openDetailForms.ContainsKey(formKey))
-                    {
-                        // 如果窗口已存在，激活它
-                        _openDetailForms[formKey].Activate();
-                    }
-                    else
-                    {
-                        // 创建新的详情窗口
-                        var detailForm = new MonitorDetail(deviceInfo);
-                        
-                        // 保存窗口引用以便后续管理
-                        _openDetailForms[formKey] = detailForm;
-                        
-                        // 当窗口关闭时，从字典中移除引用
-                        detailForm.FormClosed += (s, args) =>
-                        {
-                            if (_openDetailForms.ContainsKey(formKey))
-                            {
-                                _openDetailForms.Remove(formKey);
-                            }
-                        };
-                        
-                        // 显示窗口
-                        detailForm.Show();
-                    }
-                }
-            }
-        }
-
-        private void DgvDevices_CellContentClick(object? sender, DataGridViewCellEventArgs e)
-        {
-            // 检查点击的是不是"详细"按钮列
-            if (e.ColumnIndex >= 0 && e.RowIndex >= 0)
-            {
-                var columnName = dgvDevices.Columns[e.ColumnIndex].Name;
-                if (columnName == "dataGridViewButtonColumnDetail" && e.RowIndex < devices.Count)
-                {
-                    var deviceInfo = devices[e.RowIndex];
-                    
-                    // 检查是否已经打开了该设备的详情窗口
-                    string formKey = deviceInfo.ServerId;
-                    if (_openDetailForms.ContainsKey(formKey))
-                    {
-                        // 如果窗口已存在，激活它
-                        _openDetailForms[formKey].Activate();
-                    }
-                    else
-                    {
-                        // 创建新的详情窗口
-                        var detailForm = new MonitorDetail(deviceInfo);
-                        
-                        // 保存窗口引用以便后续管理
-                        _openDetailForms[formKey] = detailForm;
-                        
-                        // 当窗口关闭时，从字典中移除引用
-                        detailForm.FormClosed += (s, args) =>
-                        {
-                            if (_openDetailForms.ContainsKey(formKey))
-                            {
-                                _openDetailForms.Remove(formKey);
-                            }
-                        };
-                        
-                        // 显示窗口
-                        detailForm.Show();
-                    }
-                }
             }
         }
 
@@ -994,7 +892,7 @@ namespace CIMMonitor.Forms
         private void StartAutoRefresh()
         {
             refreshTimer = new System.Windows.Forms.Timer();
-            refreshTimer.Interval = 5000; // 改为5秒刷新一次
+            refreshTimer.Interval = 30000; // 改为30秒刷新一次
             refreshTimer.Tick += (s, e) =>
             {
                 LoadDevices();
@@ -1149,7 +1047,7 @@ namespace CIMMonitor.Forms
         /// <summary>
         /// 设备状态变化事件处理
         /// </summary>
-        private void OnDeviceStatusChanged(object? sender, Services.HsmsDeviceManager.DeviceStatusChangedEventArgs e)
+        private void OnDeviceStatusChanged(object? sender, HsmsDeviceManager.DeviceStatusChangedEventArgs e)
         {
             try
             {
@@ -1174,7 +1072,7 @@ namespace CIMMonitor.Forms
         /// <summary>
         /// 设备消息接收事件处理
         /// </summary>
-        private void OnDeviceMessageReceived(object? sender, Services.HsmsDeviceManager.DeviceMessageEventArgs e)
+        private void OnDeviceMessageReceived(object? sender, HsmsDeviceManager.DeviceMessageEventArgs e)
         {
             // 记录方法调用（调试）
             System.Diagnostics.Debug.WriteLine($"[设备监控] OnDeviceMessageReceived 被调用！");
@@ -1226,19 +1124,19 @@ namespace CIMMonitor.Forms
                         // 其他自动消息 - 简化显示
                         displayReason = "自动消息";
                         displayMessage = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
-<HSMSMessage>
-  <Timestamp>{e.Timestamp:yyyy-MM-dd HH:mm:ss.fff}</Timestamp>
-  <DeviceId>{e.DeviceId}</DeviceId>
-  <Direction>Receive</Direction>
-  <MessageType>{messageType}</MessageType>
-  <Content>
-    <Text>{e.Message}</Text>
-  </Content>
-  <Properties>
-    <IsUserInteractive>{isUserInteractive}</IsUserInteractive>
-    <Encoding>UTF-8</Encoding>
-  </Properties>
-</HSMSMessage>";
+                                                <HSMSMessage>
+                                                  <Timestamp>{e.Timestamp:yyyy-MM-dd HH:mm:ss.fff}</Timestamp>
+                                                  <DeviceId>{e.DeviceId}</DeviceId>
+                                                  <Direction>Receive</Direction>
+                                                  <MessageType>{messageType}</MessageType>
+                                                  <Content>
+                                                    <Text>{e.Message}</Text>
+                                                  </Content>
+                                                  <Properties>
+                                                    <IsUserInteractive>{isUserInteractive}</IsUserInteractive>
+                                                    <Encoding>UTF-8</Encoding>
+                                                  </Properties>
+                                                </HSMSMessage>";
                     }
 
                     if (e != null)
